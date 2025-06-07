@@ -9,18 +9,16 @@
       @refresh="fetchNodes"
     />
 
-    <v-btn
-      icon
-      class="ma-2"
-      style="position: fixed; top: 80px; left: 10px; z-index: 1000;"
+
       @click="drawer = !drawer"
     >
       <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
     </v-btn>
 
+ main
     <v-main>
       <v-container>
-        <NodePanel :nodes="panelNodes" @toggle="toggleNode" />
+        <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
       </v-container>
     </v-main>
   </v-app>
@@ -29,12 +27,14 @@
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
-import { ref, onMounted } from 'vue'
+import PanelSettings from '@/components/PanelSettings.vue'
+import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
 const drawer = ref(false)
+ main
 
 const fetchNodes = async () => {
   try {

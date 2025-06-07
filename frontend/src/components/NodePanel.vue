@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-row>
-      <v-col v-for="node in nodes" :key="node.id" cols="12" sm="6" md="4">
+      <v-col v-for="node in nodes" :key="node.id" cols="12" :sm="columnSpan" :md="columnSpan">
         <v-card class="ma-2">
           <v-card-title class="d-flex justify-space-between">
             {{ node.name }}
@@ -43,11 +43,14 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
 
 const props = defineProps({
-  nodes: { type: Array, default: () => [] }
+  nodes: { type: Array, default: () => [] },
+  perRow: { type: Number, default: 3 }
 })
+
+const columnSpan = computed(() => Math.floor(12 / props.perRow))
 
 const emit = defineEmits(['toggle'])
 

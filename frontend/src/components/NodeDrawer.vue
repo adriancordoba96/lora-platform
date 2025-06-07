@@ -3,6 +3,7 @@
     v-model="localOpen"
     app
     temporary
+ main
   >
     <v-list>
       <v-list-item>
