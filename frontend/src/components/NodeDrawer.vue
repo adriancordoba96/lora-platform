@@ -11,20 +11,27 @@
         v-for="node in nodes"
         :key="node.id"
         class="pa-2"
-        style="white-space: normal;"
       >
         <v-list-item-content>
           <v-list-item-title>{{ node.name }}</v-list-item-title>
-          <v-list-item-subtitle class="text-wrap text-body-2">
-            {{ node.location }} — RSSI: {{ node.rssi ?? 'N/A' }} — Voltaje: {{ node.voltage ?? 'N/A' }} V — Corriente: {{ node.current ?? 'N/A' }} A
-          </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-switch
-            v-model="node.state"
-            @change="toggleNode(node)"
-            inset
-          ></v-switch>
+          <v-btn
+            icon
+            color="primary"
+            v-if="!panelNodes.some(n => n.id === node.id)"
+            @click="addNodeToPanel(node)"
+          >
+            <v-icon>mdi-plus</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            color="error"
+            v-else
+            @click="removeNodeFromPanel(node)"
+          >
+            <v-icon>mdi-minus</v-icon>
+          </v-btn>
         </v-list-item-action>
       </v-list-item>
 
@@ -52,37 +59,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, defineProps, defineEmits } from 'vue'
 import api from '@/plugins/axios'
 
-const nodes = ref([])
+const props = defineProps({
+  nodes: { type: Array, default: () => [] },
+  panelNodes: { type: Array, default: () => [] }
+})
+
+const emit = defineEmits(['add', 'remove', 'refresh'])
+
 const dialog = ref(false)
 const name = ref('')
 const location = ref('')
 const identifier = ref('')
 
-// Cambiar estado del nodo
-const toggleNode = async (node) => {
-  try {
-    await api.post(`/nodes/${node.identifier}/state`, {
-      state: node.state ? 1 : 0,
-    })
-  } catch (err) {
-    console.error('❌ Error al actualizar estado:', err)
-  }
-}
+const addNodeToPanel = (node) => emit('add', node)
+const removeNodeFromPanel = (node) => emit('remove', node)
 
-// Cargar nodos
-const fetchNodes = async () => {
-  try {
-    const res = await api.get('/nodes')
-    nodes.value = res.data.map(n => ({ ...n, state: Boolean(n.state) }))
-  } catch (err) {
-    console.error('❌ Error al cargar nodos:', err)
-  }
-}
-
-// Crear nodo
 const addNode = async () => {
   try {
     await api.post('/nodes/create', {
@@ -94,33 +88,11 @@ const addNode = async () => {
     name.value = ''
     location.value = ''
     identifier.value = ''
-    fetchNodes()
+    emit('refresh')
   } catch (err) {
     console.error('❌ Error al crear nodo:', err)
   }
 }
-
-// WebSocket en tiempo real
-onMounted(() => {
-  fetchNodes()
-
-  const socket = new WebSocket('ws://3.66.72.52:3010') // Asegúrate de usar la IP pública
-  socket.addEventListener('open', () => {
-    console.log('✅ WebSocket conectado')
-  })
-  socket.addEventListener('message', event => {
-    console.log('📩 Mensaje WebSocket recibido:', event.data)
-    try {
-      const msg = JSON.parse(event.data)
-      if (msg.msg) {
-        // 🔁 Actualizamos nodos cuando llegue cualquier mensaje
-        fetchNodes()
-      }
-    } catch (e) {
-      console.warn('⚠️ Error parseando mensaje WebSocket:', e)
-    }
-  })
-})
 
 
 </script>
