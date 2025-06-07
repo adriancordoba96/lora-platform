@@ -10,25 +10,24 @@
     />
 
 <v-btn
-      icon
-      class="ma-2"
-      :style="{ position: 'fixed', top: '80px', left: drawer ? '240px' : '10px', zIndex: 1000 }"
-      @click="drawer = !drawer"
-    >
-      <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
-    </v-btn>
+  icon
+  class="ma-2"
+  :style="{ position: 'fixed', top: '80px', left: drawer ? '240px' : '10px', zIndex: 1000 }"
+  @click="drawer = !drawer"
+>
+  <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
+</v-btn>
 
-    <v-btn
-      icon
-      class="ma-2"
-      :style="{ position: 'fixed', top: '80px', right: '10px', zIndex: 1000 }"
-      @click="settingsOpen = true"
-    >
-      <v-icon>mdi-cog</v-icon>
-    </v-btn>
+<v-btn
+  icon
+  class="ma-2"
+  :style="{ position: 'fixed', top: '80px', right: '10px', zIndex: 1000 }"
+  @click="settingsOpen = true"
+>
+  <v-icon>mdi-cog</v-icon>
+</v-btn>
 
-    <PanelSettings v-model="settingsOpen" :cols="perRow" @update:cols="perRow = $event" />
-
+<PanelSettings v-model="settingsOpen" :cols="perRow" @update:cols="perRow = $event" />
     <v-main>
       <v-container>
         <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
