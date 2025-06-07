@@ -1,12 +1,22 @@
 <template>
   <v-app>
     <NodeDrawer
+      v-model="drawer"
       :nodes="nodes"
       :panel-nodes="panelNodes"
       @add="addToPanel"
       @remove="removeFromPanel"
       @refresh="fetchNodes"
     />
+
+    <v-btn
+      icon
+      class="ma-2"
+      style="position: fixed; top: 80px; left: 10px; z-index: 1000;"
+      @click="drawer = !drawer"
+    >
+      <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
+    </v-btn>
 
     <v-main>
       <v-container>
@@ -24,6 +34,7 @@ import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
+const drawer = ref(false)
 
 const fetchNodes = async () => {
   try {
