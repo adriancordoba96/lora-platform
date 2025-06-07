@@ -20,4 +20,7 @@ export const getNodes = (token) =>
 export const recoverPassword = (email) =>
   api.post('/api/recover', { email })
 
+export const toggleNodeState = (identifier, state) =>
+  api.post(`/nodes/${identifier}/state`, { state })
+
 export default api

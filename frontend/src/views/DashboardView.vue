@@ -4,8 +4,7 @@
 
     <v-main>
       <v-container>
-        <h1>Bienvenido al Panel de Control</h1>
-        <p>Aquí irá el contenido principal más adelante.</p>
+        <NodePanel />
       </v-container>
     </v-main>
   </v-app>
@@ -13,5 +12,6 @@
 
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
+import NodePanel from '@/components/NodePanel.vue'
 </script>
 
