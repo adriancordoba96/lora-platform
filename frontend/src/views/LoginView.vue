@@ -111,6 +111,8 @@ const doLogin = async () => {
   try {
     const res = await login(username.value, password.value)
     localStorage.setItem('token', res.data.token)
+    localStorage.setItem('username', res.data.username)
+    window.dispatchEvent(new Event('auth-changed'))
     router.push('/dashboard')
   } catch (err) {
     error.value = err.response?.data?.error || 'Error al iniciar sesión'

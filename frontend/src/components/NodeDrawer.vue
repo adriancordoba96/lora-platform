@@ -3,6 +3,7 @@
     v-model="localOpen"
     app
     temporary
+    style="overflow-y:auto"
   >
     <v-list>
       <v-list-item>
