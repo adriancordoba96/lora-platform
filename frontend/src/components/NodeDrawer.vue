@@ -16,9 +16,16 @@
         <v-list-item-content>
           <v-list-item-title>{{ node.name }}</v-list-item-title>
           <v-list-item-subtitle class="text-wrap text-body-2">
-            {{ node.location }} — Voltaje: {{ node.voltage ?? 'N/A' }} V — Corriente: {{ node.current ?? 'N/A' }} A
+            {{ node.location }} — RSSI: {{ node.rssi ?? 'N/A' }} — Voltaje: {{ node.voltage ?? 'N/A' }} V — Corriente: {{ node.current ?? 'N/A' }} A
           </v-list-item-subtitle>
         </v-list-item-content>
+        <v-list-item-action>
+          <v-switch
+            v-model="node.state"
+            @change="toggleNode(node)"
+            inset
+          ></v-switch>
+        </v-list-item-action>
       </v-list-item>
 
       <v-divider class="my-2"></v-divider>
@@ -54,11 +61,22 @@ const name = ref('')
 const location = ref('')
 const identifier = ref('')
 
+// Cambiar estado del nodo
+const toggleNode = async (node) => {
+  try {
+    await api.post(`/nodes/${node.identifier}/state`, {
+      state: node.state ? 1 : 0,
+    })
+  } catch (err) {
+    console.error('❌ Error al actualizar estado:', err)
+  }
+}
+
 // Cargar nodos
 const fetchNodes = async () => {
   try {
     const res = await api.get('/nodes')
-    nodes.value = res.data
+    nodes.value = res.data.map(n => ({ ...n, state: Boolean(n.state) }))
   } catch (err) {
     console.error('❌ Error al cargar nodos:', err)
   }

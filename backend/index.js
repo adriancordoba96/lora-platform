@@ -39,7 +39,9 @@ db.run(`CREATE TABLE IF NOT EXISTS nodes (
     identifier TEXT,
     location TEXT,
     voltage REAL,
-    current REAL
+    current REAL,
+    rssi REAL,
+    state INTEGER DEFAULT 0
 )`);
 
 // Middleware JWT
@@ -151,11 +153,11 @@ db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
 
 // Crear nodo
 app.post('/nodes/create', authenticateToken, (req, res) => {
-    const { name, location, identifier, voltage, current } = req.body;
+    const { name, location, identifier, voltage, current, rssi, state } = req.body;
     db.run(
-        `INSERT INTO nodes (user_id, name, location, identifier, voltage, current)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [req.user.id, name, location || null, identifier || null, voltage || null, current || null],
+        `INSERT INTO nodes (user_id, name, location, identifier, voltage, current, rssi, state)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.id, name, location || null, identifier || null, voltage || null, current || null, rssi || null, state || 0],
         function (err) {
             if (err) return res.status(500).send({ error: 'Error al insertar nodo' });
             res.send({
@@ -164,7 +166,9 @@ app.post('/nodes/create', authenticateToken, (req, res) => {
                 location,
                 identifier,
                 voltage,
-                current
+                current,
+                rssi: rssi || null,
+                state: state || 0
             });
         }
     );
@@ -179,20 +183,39 @@ app.get('/nodes', authenticateToken, (req, res) => {
 
 // Actualizar voltaje y corriente desde frontend
 app.post('/nodes/updateData', authenticateToken, (req, res) => {
-    const { nodeId, voltage, current } = req.body;
+    const { nodeId, voltage, current, rssi } = req.body;
     if (!nodeId || voltage == null || current == null) {
         return res.status(400).send({ error: 'Datos incompletos' });
     }
 
     db.run(
-        `UPDATE nodes SET voltage = ?, current = ? WHERE id = ? AND user_id = ?`,
-        [voltage, current, nodeId, req.user.id],
+        `UPDATE nodes SET voltage = ?, current = ?, rssi = ? WHERE id = ? AND user_id = ?`,
+        [voltage, current, rssi, nodeId, req.user.id],
         function (err) {
             if (err) {
                 console.error(err);
                 return res.status(500).send({ error: 'Error al guardar los datos' });
             }
             res.send({ message: 'Datos guardados correctamente' });
+        }
+    );
+});
+
+// Cambiar estado del nodo
+app.post('/nodes/:identifier/state', authenticateToken, (req, res) => {
+    const { identifier } = req.params;
+    const { state } = req.body;
+    db.run(
+        `UPDATE nodes SET state = ? WHERE identifier = ? AND user_id = ?`,
+        [state, identifier, req.user.id],
+        function (err) {
+            if (err) {
+                console.error(err);
+                return res.status(500).send({ error: 'Error al actualizar estado' });
+            }
+
+            mqttClient.publish(`nodos/${identifier}/set`, JSON.stringify({ state }));
+            res.send({ message: 'Estado actualizado' });
         }
     );
 });
@@ -237,11 +260,11 @@ mqttClient.on('message', (topic, message) => {
     const data = JSON.parse(message.toString());
     const parts = topic.split('/');
     const identifier = parts[1];
-    const { voltage, current } = data;
+    const { voltage, current, rssi } = data;
 
     db.run(
-      `UPDATE nodes SET voltage = ?, current = ? WHERE identifier = ?`,
-      [voltage, current, identifier],
+      `UPDATE nodes SET voltage = ?, current = ?, rssi = ? WHERE identifier = ?`,
+      [voltage, current, rssi, identifier],
       (err) => {
         if (err) {
           console.error('❌ Error al actualizar nodo:', err);
@@ -255,7 +278,8 @@ mqttClient.on('message', (topic, message) => {
                 msg: 'Nodo actualizado',
                 identifier,
                 voltage,
-                current
+                current,
+                rssi
               }));
             }
           });
