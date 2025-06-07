@@ -20,6 +20,9 @@
         <v-alert v-if="sent" type="success" class="mt-4">
           {{ t('success') }}
         </v-alert>
+        <v-alert v-if="errorMessage && !sent" type="error" class="mt-4">
+          {{ errorMessage }}
+        </v-alert>
 
         <v-divider class="my-4" />
         <div class="text-center">
@@ -32,6 +35,7 @@
 
 <script setup>
 import { ref, inject } from 'vue'
+import { recoverPassword } from '@/services/api'
 
 const lang = inject('lang', ref('es'))
 
@@ -65,18 +69,19 @@ const t = (key) => {
 const sendReset = async () => {
   errorMessage.value = ''
   sent.value = false
-
   if (!email.value || !email.value.includes('@')) {
     errorMessage.value = t('required')
     return
   }
-
   loading.value = true
-  // Aquí se simularía la llamada al backend
-  setTimeout(() => {
+  try {
+    await recoverPassword(email.value)
     sent.value = true
+  } catch (err) {
+    errorMessage.value = err.response?.data?.error || 'Error al enviar el correo.'
+  } finally {
     loading.value = false
-  }, 1000)
+  }
 }
 </script>
 
