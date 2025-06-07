@@ -3,9 +3,10 @@
     <v-app-bar app>
       <v-toolbar-title>LoRa Control</v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn text to="/">Inicio</v-btn>
-      <v-btn text to="/login">Login</v-btn>
-      <v-btn text to="/register">Registro</v-btn>
+      <v-btn text v-if="!loggedIn" to="/">Inicio</v-btn>
+      <v-btn text v-if="!loggedIn" to="/login">Login</v-btn>
+      <v-btn text v-if="!loggedIn" to="/register">Registro</v-btn>
+      <span v-else class="mr-4">Bienvenido, {{ username }}</span>
 
       <v-menu offset-y>
         <template #activator="{ props }">
@@ -32,10 +33,23 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, onMounted } from 'vue'
 
 const selectedLang = ref('es')
 provide('lang', selectedLang)
+
+const username = ref('')
+const loggedIn = ref(false)
+
+const updateAuth = () => {
+  username.value = localStorage.getItem('username') || ''
+  loggedIn.value = Boolean(localStorage.getItem('token'))
+}
+
+onMounted(() => {
+  updateAuth()
+  window.addEventListener('auth-changed', updateAuth)
+})
 
 const changeLang = (lang) => {
   selectedLang.value = lang

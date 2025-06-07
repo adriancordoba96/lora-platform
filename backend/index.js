@@ -161,7 +161,7 @@ db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
     }
 
     const token = jwt.sign({ id: user.id }, SECRET, { expiresIn: '1d' });
-    res.send({ token });
+    res.send({ token, username: user.username });
 });
 
 });

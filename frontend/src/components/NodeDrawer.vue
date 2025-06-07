@@ -1,5 +1,10 @@
 <template>
-  <v-navigation-drawer app permanent>
+  <v-navigation-drawer
+    v-model="localOpen"
+    app
+    temporary
+    style="overflow-y:auto"
+  >
     <v-list>
       <v-list-item>
         <v-list-item-title class="text-h6">Tus Nodos</v-list-item-title>
@@ -59,15 +64,27 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, watch, defineProps, defineEmits } from 'vue'
 import api from '@/plugins/axios'
 
 const props = defineProps({
+  modelValue: { type: Boolean, default: true },
   nodes: { type: Array, default: () => [] },
   panelNodes: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['add', 'remove', 'refresh'])
+const emit = defineEmits(['add', 'remove', 'refresh', 'update:modelValue'])
+
+const localOpen = ref(props.modelValue)
+
+watch(
+  () => props.modelValue,
+  val => {
+    localOpen.value = val
+  }
+)
+
+watch(localOpen, val => emit('update:modelValue', val))
 
 const dialog = ref(false)
 const name = ref('')
