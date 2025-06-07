@@ -44,6 +44,21 @@ db.run(`CREATE TABLE IF NOT EXISTS nodes (
     state INTEGER DEFAULT 0
 )`);
 
+// Ensure newer columns exist for older databases
+db.all('PRAGMA table_info(nodes)', (err, cols) => {
+  if (err) {
+    console.error('❌ Error checking table schema:', err);
+    return;
+  }
+  const names = cols.map(c => c.name);
+  if (!names.includes('rssi')) {
+    db.run('ALTER TABLE nodes ADD COLUMN rssi REAL');
+  }
+  if (!names.includes('state')) {
+    db.run('ALTER TABLE nodes ADD COLUMN state INTEGER DEFAULT 0');
+  }
+});
+
 // Middleware JWT
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
