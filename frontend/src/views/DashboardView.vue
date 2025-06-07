@@ -1,6 +1,7 @@
 <template>
   <v-app>
     <NodeDrawer
+      v-model="drawer"
       :nodes="nodes"
       :panel-nodes="panelNodes"
       @add="addToPanel"
@@ -8,9 +9,29 @@
       @refresh="fetchNodes"
     />
 
+<v-btn
+      icon
+      class="ma-2"
+      :style="{ position: 'fixed', top: '80px', left: drawer ? '240px' : '10px', zIndex: 1000 }"
+      @click="drawer = !drawer"
+    >
+      <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
+    </v-btn>
+
+    <v-btn
+      icon
+      class="ma-2"
+      :style="{ position: 'fixed', top: '80px', right: '10px', zIndex: 1000 }"
+      @click="settingsOpen = true"
+    >
+      <v-icon>mdi-cog</v-icon>
+    </v-btn>
+
+    <PanelSettings v-model="settingsOpen" :cols="perRow" @update:cols="perRow = $event" />
+
     <v-main>
       <v-container>
-        <NodePanel :nodes="panelNodes" @toggle="toggleNode" />
+        <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
       </v-container>
     </v-main>
   </v-app>
@@ -19,11 +40,17 @@
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
-import { ref, onMounted } from 'vue'
+import PanelSettings from '@/components/PanelSettings.vue'
+import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
+const drawer = ref(false)
+const settingsOpen = ref(false)
+const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
+
+watch(perRow, val => localStorage.setItem('perRow', val))
 
 const fetchNodes = async () => {
   try {
