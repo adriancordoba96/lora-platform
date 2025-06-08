@@ -45,11 +45,36 @@ import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
+const dashboards = ref({})
+const activeDashboard = ref('')
+const defaultDashboard = ref('')
 const drawer = ref(false)
 const settingsOpen = ref(false)
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
 
 watch(perRow, val => localStorage.setItem('perRow', val))
+
+watch(panelNodes, async val => {
+  if (!activeDashboard.value) return
+  try {
+    await api.post('/dashboards', {
+      name: activeDashboard.value,
+      layout: val.map(n => n.id),
+      isDefault: activeDashboard.value === defaultDashboard.value
+    })
+  } catch (err) {
+    console.error('❌ Error al guardar dashboard:', err)
+  }
+}, { deep: true })
+
+watch(activeDashboard, val => {
+  if (dashboards.value[val]) {
+    const ids = dashboards.value[val]
+    panelNodes.value = ids
+      .map(id => nodes.value.find(n => n.id === id))
+      .filter(n => n)
+  }
+})
 
 const fetchNodes = async () => {
   try {
@@ -57,6 +82,23 @@ const fetchNodes = async () => {
     nodes.value = res.data.map(n => ({ ...n, state: Boolean(n.state) }))
   } catch (err) {
     console.error('❌ Error al cargar nodos:', err)
+  }
+}
+
+const loadDashboards = async () => {
+  try {
+    const res = await api.get('/dashboards')
+    dashboards.value = res.data.layouts
+    defaultDashboard.value = res.data.default || ''
+    activeDashboard.value = defaultDashboard.value || Object.keys(dashboards.value)[0] || ''
+    if (activeDashboard.value) {
+      const ids = dashboards.value[activeDashboard.value]
+      panelNodes.value = ids
+        .map(id => nodes.value.find(n => n.id === id))
+        .filter(n => n)
+    }
+  } catch (err) {
+    console.error('❌ Error al cargar dashboards:', err)
   }
 }
 
@@ -81,7 +123,7 @@ const toggleNode = async (node) => {
 }
 
 onMounted(() => {
-  fetchNodes()
+  fetchNodes().then(loadDashboards)
   const socket = new WebSocket('ws://3.66.72.52:3010')
   socket.addEventListener('message', fetchNodes)
 })
