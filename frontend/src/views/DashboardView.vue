@@ -35,7 +35,7 @@
   @update:cols="perRow = $event"
   @save-dashboard="saveDashboard"
   @load-dashboard="loadDashboard"
-  @update:defaultDash="(val) => { dashboards.value.default = val; selectedDashboard.value = val }"
+  @update:defaultDash="setDefaultDashboard"
 />
     <v-main>
       <v-container>
@@ -127,8 +127,8 @@ const removeFromPanel = (node) => {
 }
 
 watch(panelNodes, () => {
-  if (selectedDashboard.value) {
-    dashboards.value.layouts[selectedDashboard.value] = panelNodes.value.map(n => n.id)
+  if (activeDashboard.value) {
+    dashboards.value.layouts[activeDashboard.value] = panelNodes.value.map(n => n.id)
   }
 }, { deep: true })
 
@@ -142,17 +142,30 @@ const toggleNode = async (node) => {
   }
 }
 
-const saveDashboard = (name) => {
-  dashboards.value.layouts[name] = panelNodes.value.map(n => n.id)
+const setDefaultDashboard = async (name) => {
   dashboards.value.default = name
   selectedDashboard.value = name
+  activeDashboard.value = name
+  try {
+    await api.post('/dashboards', {
+      name,
+      layout: dashboards.value.layouts[name] || [],
+      isDefault: true
+    })
+  } catch (err) {
+    console.error('❌ Error al actualizar dashboard por defecto:', err)
+  }
 }
 
-const loadDashboard = (name) => {
-  selectedDashboard.value = name
-  dashboards.value.default = name
+const saveDashboard = async (name) => {
+  dashboards.value.layouts[name] = panelNodes.value.map(n => n.id)
+  await setDefaultDashboard(name)
+}
+
+const loadDashboard = async (name) => {
   const ids = dashboards.value.layouts[name] || []
   panelNodes.value = ids.map(id => nodes.value.find(n => n.id === id)).filter(Boolean)
+  await setDefaultDashboard(name)
 }
 
 onMounted(() => {
