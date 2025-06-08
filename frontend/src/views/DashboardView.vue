@@ -35,7 +35,7 @@
   @update:cols="perRow = $event"
   @save-dashboard="saveDashboard"
   @load-dashboard="loadDashboard"
-  @update:defaultDash="(val) => { dashboards.default = val; selectedDashboard.value = val }"
+  @update:defaultDash="(val) => { dashboards.value.default = val; selectedDashboard.value = val }"
 />
     <v-main>
       <v-container>
