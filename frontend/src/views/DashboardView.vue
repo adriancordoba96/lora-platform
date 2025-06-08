@@ -9,23 +9,7 @@
       @refresh="fetchNodes"
     />
 
-<v-btn
-  icon
-  class="ma-2"
-  :style="{ position: 'fixed', top: '80px', left: drawer ? '240px' : '10px', zIndex: 1000 }"
-  @click="drawer = !drawer"
->
-  <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
-</v-btn>
-
-<v-btn
-  icon
-  class="ma-2"
-  :style="{ position: 'fixed', top: '80px', right: '10px', zIndex: 1000 }"
-  @click="settingsOpen = true"
->
-  <v-icon>mdi-cog</v-icon>
-</v-btn>
+    <RightNav v-model="activeSection" @open-settings="settingsOpen = true" />
 
 <PanelSettings
   v-model="settingsOpen"
@@ -44,7 +28,13 @@
             <h2 class="text-h5 mb-4">{{ activeDashboard }}</h2>
           </v-col>
         </v-row>
-        <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
+        <NodePanel
+          v-if="activeSection === 'panel'"
+          :nodes="panelNodes"
+          :per-row="perRow"
+          @toggle="toggleNode"
+        />
+        <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
       </v-container>
     </v-main>
   </v-app>
@@ -53,6 +43,8 @@
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
+import NodeList from '@/components/NodeList.vue'
+import RightNav from '@/components/RightNav.vue'
 import PanelSettings from '@/components/PanelSettings.vue'
 import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
@@ -63,6 +55,7 @@ const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
 const drawer = ref(false)
 const settingsOpen = ref(false)
+const activeSection = ref('panel')
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
 const selectedDashboard = ref('')
 
@@ -88,6 +81,14 @@ watch(activeDashboard, val => {
     panelNodes.value = ids
       .map(id => nodes.value.find(n => n.id === id))
       .filter(n => n)
+  }
+})
+
+watch(activeSection, val => {
+  if (val === 'nodes') {
+    drawer.value = true
+  } else if (drawer.value) {
+    drawer.value = false
   }
 })
 
