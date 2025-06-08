@@ -27,7 +27,16 @@
   <v-icon>mdi-cog</v-icon>
 </v-btn>
 
-<PanelSettings v-model="settingsOpen" :cols="perRow" @update:cols="perRow = $event" />
+<PanelSettings
+  v-model="settingsOpen"
+  :cols="perRow"
+  :dashboards="Object.keys(dashboards.layouts)"
+  :default-dash="dashboards.default"
+  @update:cols="perRow = $event"
+  @save-dashboard="saveDashboard"
+  @load-dashboard="loadDashboard"
+  @update:defaultDash="(val) => { dashboards.default = val; selectedDashboard.value = val }"
+/>
     <v-main>
       <v-container>
         <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
@@ -48,13 +57,21 @@ const panelNodes = ref([])
 const drawer = ref(false)
 const settingsOpen = ref(false)
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
+const dashboards = ref(JSON.parse(localStorage.getItem('dashboards') || '{"default":"","layouts":{}}'))
+const selectedDashboard = ref(dashboards.value.default || '')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
+watch(dashboards, val => localStorage.setItem('dashboards', JSON.stringify(val)), { deep: true })
 
+let firstLoad = true
 const fetchNodes = async () => {
   try {
     const res = await api.get('/nodes')
     nodes.value = res.data.map(n => ({ ...n, state: Boolean(n.state) }))
+    if (firstLoad && selectedDashboard.value) {
+      loadDashboard(selectedDashboard.value)
+      firstLoad = false
+    }
   } catch (err) {
     console.error('❌ Error al cargar nodos:', err)
   }
@@ -70,6 +87,12 @@ const removeFromPanel = (node) => {
   panelNodes.value = panelNodes.value.filter(n => n.id !== node.id)
 }
 
+watch(panelNodes, () => {
+  if (selectedDashboard.value) {
+    dashboards.value.layouts[selectedDashboard.value] = panelNodes.value.map(n => n.id)
+  }
+}, { deep: true })
+
 const toggleNode = async (node) => {
   try {
     await api.post(`/nodes/${node.identifier}/state`, {
@@ -78,6 +101,19 @@ const toggleNode = async (node) => {
   } catch (err) {
     console.error('❌ Error al actualizar estado:', err)
   }
+}
+
+const saveDashboard = (name) => {
+  dashboards.value.layouts[name] = panelNodes.value.map(n => n.id)
+  dashboards.value.default = name
+  selectedDashboard.value = name
+}
+
+const loadDashboard = (name) => {
+  selectedDashboard.value = name
+  dashboards.value.default = name
+  const ids = dashboards.value.layouts[name] || []
+  panelNodes.value = ids.map(id => nodes.value.find(n => n.id === id)).filter(Boolean)
 }
 
 onMounted(() => {
