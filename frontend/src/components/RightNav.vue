@@ -7,7 +7,7 @@
         :active="item.value === modelValue"
         @click="selectItem(item)"
         density="comfortable"
-        :title="item.title"
+        v-tooltip="{ text: item.title }"
       >
         <template #prepend>
           <v-icon>{{ item.icon }}</v-icon>

@@ -25,7 +25,15 @@
       <v-container>
         <v-row>
           <v-col cols="12">
-            <h2 class="text-h5 mb-4">{{ activeDashboard }}</h2>
+            <v-tabs v-model="activeDashboard" class="mb-4">
+              <v-tab
+                v-for="(layout, name) in dashboards.layouts"
+                :key="name"
+                :value="name"
+              >
+                {{ name }}
+              </v-tab>
+            </v-tabs>
           </v-col>
         </v-row>
         <NodePanel
