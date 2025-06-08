@@ -2,7 +2,7 @@
   <v-navigation-drawer
     v-model="localOpen"
     absolute
-    location="left"
+    location="right"
     width="300"
     class="node-drawer"
     style="overflow-y:auto"
@@ -117,7 +117,7 @@ const addNode = async () => {
 
 <style scoped>
 .node-drawer {
-  left: 56px;
+  right: 56px;
   top: 0;
   height: 100%;
 }
