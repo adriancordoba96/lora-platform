@@ -43,6 +43,7 @@
           @toggle="toggleNode"
         />
         <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
+        <NodeMap v-else-if="activeSection === 'map'" :nodes="nodes" />
       </v-container>
     </v-main>
   </v-app>
@@ -52,6 +53,7 @@
 import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
 import NodeList from '@/components/NodeList.vue'
+import NodeMap from '@/components/NodeMap.vue'
 import RightNav from '@/components/RightNav.vue'
 import PanelSettings from '@/components/PanelSettings.vue'
 import { ref, onMounted, watch } from 'vue'
