@@ -54,17 +54,14 @@ import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
-const dashboards = ref({})
+const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
-const defaultDashboard = ref('')
 const drawer = ref(false)
 const settingsOpen = ref(false)
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
-const dashboards = ref(JSON.parse(localStorage.getItem('dashboards') || '{"default":"","layouts":{}}'))
-const selectedDashboard = ref(dashboards.value.default || '')
+const selectedDashboard = ref('')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
-watch(dashboards, val => localStorage.setItem('dashboards', JSON.stringify(val)), { deep: true })
 let firstLoad = true
 
 watch(panelNodes, async val => {
@@ -73,7 +70,7 @@ watch(panelNodes, async val => {
     await api.post('/dashboards', {
       name: activeDashboard.value,
       layout: val.map(n => n.id),
-      isDefault: activeDashboard.value === defaultDashboard.value
+      isDefault: activeDashboard.value === dashboards.value.default
     })
   } catch (err) {
     console.error('❌ Error al guardar dashboard:', err)
@@ -81,8 +78,8 @@ watch(panelNodes, async val => {
 }, { deep: true })
 
 watch(activeDashboard, val => {
-  if (dashboards.value[val]) {
-    const ids = dashboards.value[val]
+  if (dashboards.value.layouts[val]) {
+    const ids = dashboards.value.layouts[val]
     panelNodes.value = ids
       .map(id => nodes.value.find(n => n.id === id))
       .filter(n => n)
@@ -105,11 +102,11 @@ const fetchNodes = async () => {
 const loadDashboards = async () => {
   try {
     const res = await api.get('/dashboards')
-    dashboards.value = res.data.layouts
-    defaultDashboard.value = res.data.default || ''
-    activeDashboard.value = defaultDashboard.value || Object.keys(dashboards.value)[0] || ''
+    dashboards.value = { default: res.data.default, layouts: res.data.layouts }
+    activeDashboard.value = dashboards.value.default || Object.keys(dashboards.value.layouts)[0] || ''
+    selectedDashboard.value = dashboards.value.default
     if (activeDashboard.value) {
-      const ids = dashboards.value[activeDashboard.value]
+      const ids = dashboards.value.layouts[activeDashboard.value]
       panelNodes.value = ids
         .map(id => nodes.value.find(n => n.id === id))
         .filter(n => n)
