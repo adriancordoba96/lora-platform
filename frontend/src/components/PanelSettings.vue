@@ -1,8 +1,14 @@
 <template>
-  <v-dialog v-model="localOpen" max-width="400">
-    <v-card>
+  <v-navigation-drawer
+    v-model="localOpen"
+    absolute
+    location="left"
+    width="300"
+    class="settings-drawer"
+  >
+    <v-card flat>
       <v-card-title>Panel Settings</v-card-title>
-  <v-card-text>
+      <v-card-text>
         <v-slider
           v-model="localCols"
           :min="1"
@@ -39,7 +45,7 @@
         <v-btn text @click="localOpen = false">Cerrar</v-btn>
       </v-card-actions>
     </v-card>
-  </v-dialog>
+  </v-navigation-drawer>
 </template>
 
 <script setup>
@@ -89,3 +95,11 @@ const load = () => {
   }
 }
 </script>
+
+<style scoped>
+.settings-drawer {
+  left: 56px;
+  top: 0;
+  height: 100%;
+}
+</style>

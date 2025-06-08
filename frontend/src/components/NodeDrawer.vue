@@ -1,11 +1,11 @@
 <template>
   <v-navigation-drawer
     v-model="localOpen"
-    app
-    temporary
-
-  style="overflow-y:auto"
- main
+    absolute
+    location="left"
+    width="300"
+    class="node-drawer"
+    style="overflow-y:auto"
   >
     <v-list>
       <v-list-item>
@@ -113,5 +113,12 @@ const addNode = async () => {
   }
 }
 
-
 </script>
+
+<style scoped>
+.node-drawer {
+  left: 56px;
+  top: 0;
+  height: 100%;
+}
+</style>
