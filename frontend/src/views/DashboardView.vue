@@ -39,6 +39,11 @@
 />
     <v-main>
       <v-container>
+        <v-row>
+          <v-col cols="12">
+            <h2 class="text-h5 mb-4">{{ activeDashboard }}</h2>
+          </v-col>
+        </v-row>
         <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
       </v-container>
     </v-main>

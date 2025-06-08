@@ -3,39 +3,35 @@
     <v-row>
       <v-col v-for="node in nodes" :key="node.id" cols="12" :sm="columnSpan" :md="columnSpan">
         <v-card class="ma-2">
-          <v-card-title class="d-flex justify-space-between">
+          <v-card-title class="d-flex justify-space-between align-center">
             {{ node.name }}
-            <v-switch
-              v-model="node.state"
-              @change="toggleNode(node)"
-              :label="node.state ? 'Encendido' : 'Apagado'"
-              hide-details
-            ></v-switch>
+            <v-btn
+              :color="node.state ? 'green' : 'red'"
+              @click="toggleButton(node)"
+              class="text-white"
+              density="comfortable"
+            >
+              Salida
+            </v-btn>
           </v-card-title>
           <v-divider></v-divider>
-          <v-list density="compact">
-            <v-list-item>
-              <v-list-item-icon>
-                <v-icon color="primary">mdi-signal</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>RSSI</v-list-item-title>
-              <v-list-item-subtitle>{{ node.rssi ?? 'N/A' }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-icon>
-                <v-icon color="primary">mdi-flash</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Voltaje</v-list-item-title>
-              <v-list-item-subtitle>{{ node.voltage ?? 'N/A' }} V</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-icon>
-                <v-icon color="primary">mdi-current-ac</v-icon>
-              </v-list-item-icon>
-              <v-list-item-title>Corriente</v-list-item-title>
-              <v-list-item-subtitle>{{ node.current ?? 'N/A' }} A</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
+          <v-row class="pa-2 text-center" density="compact">
+            <v-col cols="4">
+              <v-icon color="primary">mdi-signal</v-icon>
+              <div class="text-caption">RSSI</div>
+              <div class="text-body-2">{{ node.rssi ?? 'N/A' }}</div>
+            </v-col>
+            <v-col cols="4">
+              <v-icon color="primary">mdi-flash</v-icon>
+              <div class="text-caption">Voltaje</div>
+              <div class="text-body-2">{{ node.voltage ?? 'N/A' }} V</div>
+            </v-col>
+            <v-col cols="4">
+              <v-icon color="primary">mdi-current-ac</v-icon>
+              <div class="text-caption">Corriente</div>
+              <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
+            </v-col>
+          </v-row>
         </v-card>
       </v-col>
     </v-row>
@@ -56,5 +52,10 @@ const emit = defineEmits(['toggle'])
 
 const toggleNode = (node) => {
   emit('toggle', node)
+}
+
+const toggleButton = (node) => {
+  node.state = !node.state
+  toggleNode(node)
 }
 </script>
