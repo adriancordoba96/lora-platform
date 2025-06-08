@@ -6,7 +6,22 @@
       <v-btn text v-if="!loggedIn" to="/">Inicio</v-btn>
       <v-btn text v-if="!loggedIn" to="/login">Login</v-btn>
       <v-btn text v-if="!loggedIn" to="/register">Registro</v-btn>
-      <span v-else class="mr-4">Bienvenido, {{ username }}</span>
+      <v-menu v-else offset-y>
+        <template #activator="{ props }">
+          <v-btn v-bind="props" text>
+            Bienvenido, {{ username }}
+            <v-icon end>mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item to="/profile">
+            <v-list-item-title>Perfil</v-list-item-title>
+          </v-list-item>
+          <v-list-item @click="logout">
+            <v-list-item-title>Cerrar sesión</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
 
       <v-menu offset-y>
         <template #activator="{ props }">
@@ -34,12 +49,14 @@
 
 <script setup>
 import { ref, provide, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const selectedLang = ref('es')
 provide('lang', selectedLang)
 
 const username = ref('')
 const loggedIn = ref(false)
+const router = useRouter()
 
 const updateAuth = () => {
   username.value = localStorage.getItem('username') || ''
@@ -53,5 +70,13 @@ onMounted(() => {
 
 const changeLang = (lang) => {
   selectedLang.value = lang
+}
+
+const logout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('username')
+  updateAuth()
+  window.dispatchEvent(new Event('auth-changed'))
+  router.push('/login')
 }
 </script>
