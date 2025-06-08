@@ -7,6 +7,7 @@
         :active="item.value === modelValue"
         @click="selectItem(item)"
         density="comfortable"
+        :title="item.title"
       >
         <template #prepend>
           <v-icon>{{ item.icon }}</v-icon>
@@ -26,10 +27,10 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'open-settings'])
 
 const items = [
-  { value: 'panel', icon: 'mdi-view-dashboard' },
-  { value: 'nodes', icon: 'mdi-chip' },
-  { value: 'list', icon: 'mdi-format-list-bulleted' },
-  { value: 'settings', icon: 'mdi-cog' }
+  { value: 'panel', icon: 'mdi-view-dashboard', title: 'Dashboard' },
+  { value: 'nodes', icon: 'mdi-chip', title: 'Tus nodos' },
+  { value: 'list', icon: 'mdi-format-list-bulleted', title: 'Lista de nodos' },
+  { value: 'settings', icon: 'mdi-cog', title: 'Ajustes' }
 ]
 
 const selectItem = (item) => {
