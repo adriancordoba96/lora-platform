@@ -43,6 +43,13 @@ db.run(`CREATE TABLE IF NOT EXISTS nodes (
     rssi REAL,
     state INTEGER DEFAULT 0
 )`);
+db.run(`CREATE TABLE IF NOT EXISTS dashboards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    name TEXT,
+    layout TEXT,
+    is_default INTEGER DEFAULT 0
+)`);
 
 // Ensure newer columns exist for older databases
 db.all('PRAGMA table_info(nodes)', (err, cols) => {
@@ -56,6 +63,21 @@ db.all('PRAGMA table_info(nodes)', (err, cols) => {
   }
   if (!names.includes('state')) {
     db.run('ALTER TABLE nodes ADD COLUMN state INTEGER DEFAULT 0');
+  }
+});
+
+// Migration: ensure dashboards table exists and has required columns
+db.all('PRAGMA table_info(dashboards)', (err, cols) => {
+  if (err) {
+    console.error('❌ Error checking dashboards schema:', err);
+    return;
+  }
+  const names = cols.map(c => c.name);
+  if (!names.includes('layout')) {
+    db.run('ALTER TABLE dashboards ADD COLUMN layout TEXT');
+  }
+  if (!names.includes('is_default')) {
+    db.run('ALTER TABLE dashboards ADD COLUMN is_default INTEGER DEFAULT 0');
   }
 });
 
@@ -396,8 +418,78 @@ app.post('/api/reset', (req, res) => {
     db.run('UPDATE users SET password = ? WHERE id = ?', [hash, row.user_id], (err) => {
       if (err) return res.status(500).json({ error: 'No se pudo actualizar la contraseña' });
 
-      db.run('DELETE FROM reset_tokens WHERE id = ?', [row.id]);
+  db.run('DELETE FROM reset_tokens WHERE id = ?', [row.id]);
       res.json({ message: 'Contraseña actualizada' });
     });
   });
+});
+
+// Obtener dashboards del usuario
+app.get('/dashboards', authenticateToken, (req, res) => {
+  db.all('SELECT * FROM dashboards WHERE user_id = ?', [req.user.id], (err, rows) => {
+    if (err) {
+      console.error('❌ Error fetching dashboards:', err);
+      return res.status(500).send({ error: 'Error al obtener dashboards' });
+    }
+    const result = { default: null, layouts: {} };
+    rows.forEach(r => {
+      if (r.is_default) result.default = r.name;
+      try {
+        result.layouts[r.name] = JSON.parse(r.layout || '[]');
+      } catch {
+        result.layouts[r.name] = [];
+      }
+    });
+    res.send(result);
+  });
+});
+
+// Crear o actualizar dashboard
+app.post('/dashboards', authenticateToken, (req, res) => {
+  const { name, layout, isDefault } = req.body;
+  if (!name || !Array.isArray(layout)) {
+    return res.status(400).send({ error: 'Datos incompletos' });
+  }
+
+  const saveDashboard = () => {
+    db.get('SELECT id FROM dashboards WHERE user_id = ? AND name = ?', [req.user.id, name], (err, row) => {
+      if (err) {
+        console.error('❌ Error searching dashboard:', err);
+        return res.status(500).send({ error: 'Error al guardar dashboard' });
+      }
+
+      const layoutStr = JSON.stringify(layout);
+      const flag = isDefault ? 1 : 0;
+
+      if (row) {
+        db.run('UPDATE dashboards SET layout = ?, is_default = ? WHERE id = ?', [layoutStr, flag, row.id], function (uErr) {
+          if (uErr) {
+            console.error('❌ Error updating dashboard:', uErr);
+            return res.status(500).send({ error: 'Error al guardar dashboard' });
+          }
+          res.send({ message: 'Dashboard actualizado' });
+        });
+      } else {
+        db.run('INSERT INTO dashboards (user_id, name, layout, is_default) VALUES (?, ?, ?, ?)', [req.user.id, name, layoutStr, flag], function (iErr) {
+          if (iErr) {
+            console.error('❌ Error inserting dashboard:', iErr);
+            return res.status(500).send({ error: 'Error al guardar dashboard' });
+          }
+          res.send({ message: 'Dashboard creado', id: this.lastID });
+        });
+      }
+    });
+  };
+
+  if (isDefault) {
+    db.run('UPDATE dashboards SET is_default = 0 WHERE user_id = ?', [req.user.id], err => {
+      if (err) {
+        console.error('❌ Error clearing defaults:', err);
+        return res.status(500).send({ error: 'Error al guardar dashboard' });
+      }
+      saveDashboard();
+    });
+  } else {
+    saveDashboard();
+  }
 });
