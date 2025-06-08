@@ -30,6 +30,7 @@ const items = [
   { value: 'panel', icon: 'mdi-view-dashboard', title: 'Dashboard' },
   { value: 'nodes', icon: 'mdi-chip', title: 'Tus nodos' },
   { value: 'list', icon: 'mdi-format-list-bulleted', title: 'Lista de nodos' },
+  { value: 'map', icon: 'mdi-map', title: 'Mapa' },
   { value: 'settings', icon: 'mdi-cog', title: 'Ajustes' }
 ]
 
