@@ -34,7 +34,14 @@
         </v-row>
         <v-row class="pb-4">
           <v-col cols="12">
-            <SemiGauge :value="Number(node.current) || 0" :max="10" />
+            <VueSpeedometer
+              :value="Number(node.current) || 0"
+              :min-value="0"
+              :max-value="10"
+              :segments="5"
+              needle-color="#f44336"
+              width="175"
+            />
           </v-col>
         </v-row>
       </v-card>
@@ -45,7 +52,7 @@
 
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
-import SemiGauge from '@/components/SemiGauge.vue'
+import VueSpeedometer from 'vue-speedometer'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
