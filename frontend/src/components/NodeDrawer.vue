@@ -5,7 +5,7 @@
     location="left"
     width="300"
     class="node-drawer"
-    style="overflow-y:auto"
+    style="overflow-y:auto; left:56px; top:0; height:100%"
   >
     <v-list>
       <v-list-item>
