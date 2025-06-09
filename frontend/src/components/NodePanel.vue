@@ -32,8 +32,8 @@
             <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
           </v-col>
         </v-row>
-        <v-row class="pb-4">
-          <v-col cols="12">
+        <v-row class="pb-0 justify-center">
+          <v-col cols="12" class="d-flex justify-center">
             <VueSpeedometer
               :value="Number(node.current) || 0"
               :min-value="0"
