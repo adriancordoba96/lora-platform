@@ -1,5 +1,5 @@
 <template>
-  <v-navigation-drawer rail location="right" permanent>
+  <v-navigation-drawer rail location="left" permanent>
     <v-list>
       <v-list-item
         v-for="item in items"
