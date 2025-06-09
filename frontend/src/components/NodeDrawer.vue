@@ -117,7 +117,7 @@ const addNode = async () => {
 
 <style scoped>
 .node-drawer {
-  right: 56px;
+  right: 0;
   top: 0;
   height: 100%;
 }
