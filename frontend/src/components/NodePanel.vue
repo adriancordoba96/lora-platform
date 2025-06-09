@@ -15,24 +15,29 @@
             </v-btn>
           </v-card-title>
           <v-divider></v-divider>
-          <v-row class="pa-2 text-center" density="compact">
-            <v-col cols="4">
-              <v-icon color="primary">mdi-signal</v-icon>
-              <div class="text-caption">RSSI</div>
-              <div class="text-body-2">{{ node.rssi ?? 'N/A' }}</div>
-            </v-col>
-            <v-col cols="4">
-              <v-icon color="primary">mdi-flash</v-icon>
-              <div class="text-caption">Voltaje</div>
-              <div class="text-body-2">{{ node.voltage ?? 'N/A' }} V</div>
-            </v-col>
-            <v-col cols="4">
-              <v-icon color="primary">mdi-current-ac</v-icon>
-              <div class="text-caption">Corriente</div>
-              <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
-            </v-col>
-          </v-row>
-        </v-card>
+        <v-row class="pa-2 text-center" density="compact">
+          <v-col cols="4">
+            <v-icon color="primary">mdi-signal</v-icon>
+            <div class="text-caption">RSSI</div>
+            <div class="text-body-2">{{ node.rssi ?? 'N/A' }}</div>
+          </v-col>
+          <v-col cols="4">
+            <v-icon color="primary">mdi-flash</v-icon>
+            <div class="text-caption">Voltaje</div>
+            <div class="text-body-2">{{ node.voltage ?? 'N/A' }} V</div>
+          </v-col>
+          <v-col cols="4">
+            <v-icon color="primary">mdi-current-ac</v-icon>
+            <div class="text-caption">Corriente</div>
+            <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
+          </v-col>
+        </v-row>
+        <v-row class="pb-4">
+          <v-col cols="12">
+            <SemiGauge :value="Number(node.current) || 0" :max="10" />
+          </v-col>
+        </v-row>
+      </v-card>
       </v-col>
     </v-row>
   </v-container>
@@ -40,6 +45,7 @@
 
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
+import SemiGauge from '@/components/SemiGauge.vue'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
