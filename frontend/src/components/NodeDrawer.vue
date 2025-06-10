@@ -23,28 +23,22 @@
           <v-list-item-title>{{ node.name }}</v-list-item-title>
         </v-list-item-content>
         <v-list-item-action>
-          <v-btn
-            icon
+          <v-switch
+            density="compact"
             color="primary"
-            v-if="!panelNodes.some(n => n.id === node.id)"
-            @click="addNodeToPanel(node)"
-          >
-            <v-icon>mdi-plus</v-icon>
-          </v-btn>
-          <v-btn
-            icon
-            color="error"
-            v-else
-            @click="removeNodeFromPanel(node)"
-          >
-            <v-icon>mdi-minus</v-icon>
-          </v-btn>
+            hide-details
+            :model-value="panelNodes.some(n => n.id === node.id)"
+            @update:model-value="val => val ? addNodeToPanel(node) : removeNodeFromPanel(node)"
+          />
         </v-list-item-action>
       </v-list-item>
 
       <v-divider class="my-2"></v-divider>
 
-      <v-btn color="primary" @click="dialog = true">➕ Añadir Nodo</v-btn>
+      <v-btn color="primary" @click="dialog = true">
+        <v-icon start>mdi-plus</v-icon>
+        Añadir Nodo
+      </v-btn>
     </v-list>
 
     <!-- Diálogo para añadir nodo -->
