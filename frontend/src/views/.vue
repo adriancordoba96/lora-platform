@@ -1,6 +1,5 @@
 <template>
   <v-app>
-  <RightNav v-model="activeSection" @open-settings="settingsOpen = true" />
     <NodeDrawer
       v-model="drawer"
       :nodes="nodes"
@@ -10,7 +9,23 @@
       @refresh="fetchNodes"
     />
 
-    
+<v-btn
+icon
+  class="ma-2"
+  :style="{ position: 'fixed', top: '80px', left: drawer ? '240px' : '10px', zIndex: 1000 }"
+  @click="drawer = !drawer"
+>
+  <v-icon>{{ drawer ? 'mdi-menu-open' : 'mdi-menu' }}</v-icon>
+</v-btn>
+
+<v-btn
+  icon
+  class="ma-2"
+  :style="{ position: 'fixed', top: '80px', right: '10px', zIndex: 1000 }"
+  @click="settingsOpen = true"
+>
+  <v-icon>mdi-cog</v-icon>
+</v-btn>
 
 <PanelSettings
   v-model="settingsOpen"
@@ -20,31 +35,12 @@
   @update:cols="perRow = $event"
   @save-dashboard="saveDashboard"
   @load-dashboard="loadDashboard"
-  @update:defaultDash="setDefaultDashboard"
+  @update:defaultDash="(val) => { dashboards.default = val; selectedDashboard.value = val }"
+  @update:defaultDash="(val) => { dashboards.value.default = val; selectedDashboard.value = val }"
 />
     <v-main>
       <v-container>
-        <v-row>
-          <v-col cols="12">
-            <v-tabs v-model="activeDashboard" class="mb-4">
-              <v-tab
-                v-for="(layout, name) in dashboards.layouts"
-                :key="name"
-                :value="name"
-              >
-                {{ name }}
-              </v-tab>
-            </v-tabs>
-          </v-col>
-        </v-row>
-        <NodePanel
-          v-if="activeSection === 'panel'"
-          :nodes="panelNodes"
-          :per-row="perRow"
-          @toggle="toggleNode"
-        />
-        <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
-        <NodeMap v-else-if="activeSection === 'map'" :nodes="nodes" />
+        <NodePanel :nodes="panelNodes" :per-row="perRow" @toggle="toggleNode" />
       </v-container>
     </v-main>
   </v-app>
@@ -53,24 +49,25 @@
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
-import NodeList from '@/components/NodeList.vue'
-import NodeMap from '@/components/NodeMap.vue'
-import RightNav from '@/components/RightNav.vue'
 import PanelSettings from '@/components/PanelSettings.vue'
 import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
 
 const nodes = ref([])
 const panelNodes = ref([])
+const dashboards = ref({})
 const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
+const defaultDashboard = ref('')
 const drawer = ref(false)
 const settingsOpen = ref(false)
-const activeSection = ref('panel')
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
+const dashboards = ref(JSON.parse(localStorage.getItem('dashboards') || '{"default":"","layouts":{}}'))
+const selectedDashboard = ref(dashboards.value.default || '')
 const selectedDashboard = ref('')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
+watch(dashboards, val => localStorage.setItem('dashboards', JSON.stringify(val)), { deep: true })
 let firstLoad = true
 
 watch(panelNodes, async val => {
@@ -79,6 +76,7 @@ watch(panelNodes, async val => {
     await api.post('/dashboards', {
       name: activeDashboard.value,
       layout: val.map(n => n.id),
+      isDefault: activeDashboard.value === defaultDashboard.value
       isDefault: activeDashboard.value === dashboards.value.default
     })
   } catch (err) {
@@ -87,19 +85,13 @@ watch(panelNodes, async val => {
 }, { deep: true })
 
 watch(activeDashboard, val => {
+  if (dashboards.value[val]) {
+    const ids = dashboards.value[val]
   if (dashboards.value.layouts[val]) {
     const ids = dashboards.value.layouts[val]
     panelNodes.value = ids
       .map(id => nodes.value.find(n => n.id === id))
       .filter(n => n)
-  }
-})
-
-watch(activeSection, val => {
-  if (val === 'nodes') {
-    drawer.value = true
-  } else if (drawer.value) {
-    drawer.value = false
   }
 })
 
@@ -119,10 +111,14 @@ const fetchNodes = async () => {
 const loadDashboards = async () => {
   try {
     const res = await api.get('/dashboards')
+    dashboards.value = res.data.layouts
+    defaultDashboard.value = res.data.default || ''
+    activeDashboard.value = defaultDashboard.value || Object.keys(dashboards.value)[0] || ''
     dashboards.value = { default: res.data.default, layouts: res.data.layouts }
     activeDashboard.value = dashboards.value.default || Object.keys(dashboards.value.layouts)[0] || ''
     selectedDashboard.value = dashboards.value.default
     if (activeDashboard.value) {
+      const ids = dashboards.value[activeDashboard.value]
       const ids = dashboards.value.layouts[activeDashboard.value]
       panelNodes.value = ids
         .map(id => nodes.value.find(n => n.id === id))
@@ -144,8 +140,8 @@ const removeFromPanel = (node) => {
 }
 
 watch(panelNodes, () => {
-  if (activeDashboard.value) {
-    dashboards.value.layouts[activeDashboard.value] = panelNodes.value.map(n => n.id)
+  if (selectedDashboard.value) {
+    dashboards.value.layouts[selectedDashboard.value] = panelNodes.value.map(n => n.id)
   }
 }, { deep: true })
 
@@ -159,30 +155,17 @@ const toggleNode = async (node) => {
   }
 }
 
-const setDefaultDashboard = async (name) => {
+const saveDashboard = (name) => {
+  dashboards.value.layouts[name] = panelNodes.value.map(n => n.id)
   dashboards.value.default = name
   selectedDashboard.value = name
-  activeDashboard.value = name
-  try {
-    await api.post('/dashboards', {
-      name,
-      layout: dashboards.value.layouts[name] || [],
-      isDefault: true
-    })
-  } catch (err) {
-    console.error('❌ Error al actualizar dashboard por defecto:', err)
-  }
 }
 
-const saveDashboard = async (name) => {
-  dashboards.value.layouts[name] = panelNodes.value.map(n => n.id)
-  await setDefaultDashboard(name)
-}
-
-const loadDashboard = async (name) => {
+const loadDashboard = (name) => {
+  selectedDashboard.value = name
+  dashboards.value.default = name
   const ids = dashboards.value.layouts[name] || []
   panelNodes.value = ids.map(id => nodes.value.find(n => n.id === id)).filter(Boolean)
-  await setDefaultDashboard(name)
 }
 
 onMounted(() => {

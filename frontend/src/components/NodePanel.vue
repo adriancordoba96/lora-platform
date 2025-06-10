@@ -1,7 +1,13 @@
 <template>
   <v-container>
     <v-row>
-      <v-col v-for="node in nodes" :key="node.id" cols="12" :sm="columnSpan" :md="columnSpan">
+      <v-col
+        v-for="node in nodes"
+        :key="node.id"
+        cols="12"
+        :sm="columnSpan"
+        :md="columnSpan"
+      >
         <v-card class="ma-2">
           <v-card-title class="d-flex justify-space-between align-center">
             {{ node.name }}
@@ -15,36 +21,43 @@
             </v-btn>
           </v-card-title>
           <v-divider></v-divider>
-        <v-row class="pa-2 text-center" density="compact">
-          <v-col cols="4">
-            <v-icon color="primary">mdi-signal</v-icon>
-            <div class="text-caption">RSSI</div>
-            <div class="text-body-2">{{ node.rssi ?? 'N/A' }}</div>
-          </v-col>
-          <v-col cols="4">
-            <v-icon color="primary">mdi-flash</v-icon>
-            <div class="text-caption">Voltaje</div>
-            <div class="text-body-2">{{ node.voltage ?? 'N/A' }} V</div>
-          </v-col>
-          <v-col cols="4">
-            <v-icon color="primary">mdi-current-ac</v-icon>
-            <div class="text-caption">Corriente</div>
-            <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
-          </v-col>
-        </v-row>
-        <v-row class="pb-0 justify-center">
-          <v-col cols="12" class="d-flex justify-center">
-            <VueSpeedometer
-              :value="Number(node.current) || 0"
-              :min-value="0"
-              :max-value="10"
-              :segments="5"
-              needle-color="#f44336"
-              width="175"
-            />
-          </v-col>
-        </v-row>
-      </v-card>
+          <v-row class="pa-2 text-center" density="compact">
+            <v-col cols="4">
+              <v-icon color="primary">mdi-signal</v-icon>
+              <div class="text-caption">RSSI</div>
+              <div class="text-body-2">{{ node.rssi ?? 'N/A' }}</div>
+            </v-col>
+            <v-col cols="4">
+              <v-icon color="primary">mdi-flash</v-icon>
+              <div class="text-caption">Voltaje</div>
+              <div class="text-body-2">{{ node.voltage ?? 'N/A' }} V</div>
+            </v-col>
+            <v-col cols="4">
+              <v-icon color="primary">mdi-current-ac</v-icon>
+              <div class="text-caption">Corriente</div>
+              <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
+            </v-col>
+          </v-row>
+          <v-row class="pb-0 justify-center">
+            <v-col cols="12" class="d-flex justify-center">
+              <vue-speedometer
+                :value="Number(node.current) || 0"
+                :min-value="0"
+                :max-value="10"
+                :needle-color="'#424242'"
+                :ring-width="20"
+                :text-color="'#333'"
+                :value-text-font-size="'22px'"
+                :custom-segment-stops="[0, 7.5, 10]"
+                :segment-colors="['#4caf50', '#fb8c00']"
+                :current-value-text="''"
+                :show-value="true"
+                :width="200"
+                :height="130"
+              />
+            </v-col>
+          </v-row>
+        </v-card>
       </v-col>
     </v-row>
   </v-container>
