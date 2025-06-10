@@ -7,44 +7,27 @@
     class="node-drawer"
     style="overflow-y:auto"
   >
-    <v-list>
-      <v-list-item>
-        <v-list-item-title class="text-h6">Tus Nodos</v-list-item-title>
+    <v-toolbar density="compact" flat>
+      <v-toolbar-title>Tus Nodos</v-toolbar-title>
+      <v-spacer />
+      <v-btn icon color="primary" @click="dialog = true">
+        <v-icon>mdi-plus</v-icon>
+      </v-btn>
+    </v-toolbar>
+
+    <v-divider></v-divider>
+
+    <v-list density="compact">
+      <v-list-item v-for="node in nodes" :key="node.id" class="px-2">
+        <v-checkbox
+          :label="node.name"
+          hide-details
+          density="compact"
+          color="primary"
+          :model-value="panelNodes.some(n => n.id === node.id)"
+          @update:model-value="val => val ? addNodeToPanel(node) : removeNodeFromPanel(node)"
+        />
       </v-list-item>
-
-      <v-divider></v-divider>
-
-      <v-list-item
-        v-for="node in nodes"
-        :key="node.id"
-        class="pa-2"
-      >
-        <v-list-item-content>
-          <v-list-item-title>{{ node.name }}</v-list-item-title>
-        </v-list-item-content>
-        <v-list-item-action>
-          <v-btn
-            icon
-            color="primary"
-            v-if="!panelNodes.some(n => n.id === node.id)"
-            @click="addNodeToPanel(node)"
-          >
-            <v-icon>mdi-plus</v-icon>
-          </v-btn>
-          <v-btn
-            icon
-            color="error"
-            v-else
-            @click="removeNodeFromPanel(node)"
-          >
-            <v-icon>mdi-minus</v-icon>
-          </v-btn>
-        </v-list-item-action>
-      </v-list-item>
-
-      <v-divider class="my-2"></v-divider>
-
-      <v-btn color="primary" @click="dialog = true">➕ Añadir Nodo</v-btn>
     </v-list>
 
     <!-- Diálogo para añadir nodo -->
