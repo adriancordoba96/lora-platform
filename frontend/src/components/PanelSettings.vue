@@ -7,39 +7,52 @@
     class="settings-drawer"
   >
     <v-card flat>
-      <v-card-title>Panel Settings</v-card-title>
-      <v-card-text>
-        <v-slider
-          v-model="localCols"
-          :min="1"
-          :max="4"
-          step="1"
-          thumb-label
-          label="Nodos por fila"
-        ></v-slider>
+      <v-card-title>Settings</v-card-title>
+      <v-tabs v-model="activeTab" density="comfortable">
+        <v-tab value="dashboard">Dashboard</v-tab>
+        <v-tab value="general">General</v-tab>
+      </v-tabs>
+      <v-window v-model="activeTab" class="mt-2">
+        <v-window-item value="dashboard">
+          <v-card-text>
+            <v-slider
+              v-model="localCols"
+              :min="1"
+              :max="4"
+              step="1"
+              thumb-label
+              label="Nodos por fila"
+            ></v-slider>
 
-        <v-text-field
-          v-model="dashboardName"
-          label="Nombre del dashboard"
-          class="mt-4"
-        ></v-text-field>
-        <v-btn color="primary" class="mt-2" @click="save">Guardar actual</v-btn>
+            <v-text-field
+              v-model="dashboardName"
+              label="Nombre del dashboard"
+              class="mt-4"
+            ></v-text-field>
+            <v-btn color="primary" class="mt-2" @click="save">Guardar actual</v-btn>
 
-        <v-select
-          v-model="selectedDash"
-          :items="props.dashboards"
-          label="Dashboards guardados"
-          class="mt-4"
-        ></v-select>
-        <v-btn class="mt-2" @click="load">Cargar</v-btn>
+            <v-select
+              v-model="selectedDash"
+              :items="props.dashboards"
+              label="Dashboards guardados"
+              class="mt-4"
+            ></v-select>
+            <v-btn class="mt-2" @click="load">Cargar</v-btn>
 
-        <v-select
-          v-model="defaultDashLocal"
-          :items="props.dashboards"
-          label="Dashboard por defecto"
-          class="mt-4"
-        ></v-select>
-      </v-card-text>
+            <v-select
+              v-model="defaultDashLocal"
+              :items="props.dashboards"
+              label="Dashboard por defecto"
+              class="mt-4"
+            ></v-select>
+          </v-card-text>
+        </v-window-item>
+        <v-window-item value="general">
+          <v-card-text>
+            Ajustes generales próximamente...
+          </v-card-text>
+        </v-window-item>
+      </v-window>
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn text @click="localOpen = false">Cerrar</v-btn>
@@ -71,6 +84,7 @@ const localCols = ref(props.cols)
 const dashboardName = ref('')
 const selectedDash = ref(props.defaultDash)
 const defaultDashLocal = ref(props.defaultDash)
+const activeTab = ref('dashboard')
 
 watch(() => props.modelValue, v => (localOpen.value = v))
 watch(() => props.cols, v => (localCols.value = v))
