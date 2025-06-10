@@ -10,6 +10,7 @@
         <v-text-field
           :label="t('username')"
           v-model="username"
+          @keyup.enter="doLogin"
           :error-messages="errors.username"
         />
         <v-text-field
@@ -18,6 +19,7 @@
           :type="showPassword ? 'text' : 'password'"
           :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
           @click:append-inner="showPassword = !showPassword"
+          @keyup.enter="doLogin"
           :error-messages="errors.password"
         />
 
