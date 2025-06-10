@@ -28,6 +28,7 @@
           @update:model-value="val => val ? addNodeToPanel(node) : removeNodeFromPanel(node)"
         />
       </v-list-item>
+
     </v-list>
 
     <!-- Diálogo para añadir nodo -->
