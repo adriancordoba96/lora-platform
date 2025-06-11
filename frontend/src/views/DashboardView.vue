@@ -45,6 +45,7 @@
         />
         <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
         <NodeMap v-else-if="activeSection === 'map'" :nodes="nodes" />
+        <AlertSettings v-else-if="activeSection === 'alerts'" />
       </v-container>
     </v-main>
   </v-app>
@@ -57,6 +58,7 @@ import NodeList from '@/components/NodeList.vue'
 import NodeMap from '@/components/NodeMap.vue'
 import RightNav from '@/components/RightNav.vue'
 import PanelSettings from '@/components/PanelSettings.vue'
+import AlertSettings from '@/components/AlertSettings.vue'
 import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
 

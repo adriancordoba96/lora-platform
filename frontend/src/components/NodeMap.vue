@@ -14,6 +14,9 @@
 import { ref, computed, defineProps, onMounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet-draw'
+import 'leaflet-draw/dist/leaflet.draw.css'
+import api from '@/plugins/axios'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] }
@@ -53,6 +56,29 @@ const mapRef = ref(null)
 let map
 let tileLayer
 let markerLayer
+let zoneLayer
+let drawControl
+const zones = ref([])
+
+async function fetchZones() {
+  try {
+    const res = await api.get('/zones')
+    zones.value = res.data || []
+    updateZones()
+  } catch (err) {
+    console.error('❌ Error cargando zonas:', err)
+  }
+}
+
+function updateZones() {
+  if (!zoneLayer) return
+  zoneLayer.clearLayers()
+  zones.value.forEach(z => {
+    const poly = L.polygon(z.polygon, { color: 'red' }).addTo(zoneLayer)
+    poly.bindPopup(z.name)
+    poly.zoneId = z.id
+  })
+}
 
 function updateMarkers() {
   if (!markerLayer) return
@@ -69,7 +95,31 @@ onMounted(() => {
   map = L.map(mapRef.value).setView(center.value, zoom.value)
   tileLayer = L.tileLayer(activeTile.value.url, { attribution: activeTile.value.attribution }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
+  zoneLayer = L.layerGroup().addTo(map)
   updateMarkers()
+  fetchZones()
+  drawControl = new L.Control.Draw({ edit: { featureGroup: zoneLayer } })
+  map.addControl(drawControl)
+  map.on(L.Draw.Event.CREATED, async e => {
+    if (e.layerType === 'polygon') {
+      const latlngs = e.layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng])
+      const name = prompt('Nombre de la zona') || 'Zona'
+      try {
+        const res = await api.post('/zones', { name, polygon: latlngs })
+        e.layer.addTo(zoneLayer)
+        e.layer.zoneId = res.data.id
+        e.layer.bindPopup(name)
+        zones.value.push({ id: res.data.id, name, polygon: latlngs })
+      } catch (err) {
+        console.error('❌ Error guardando zona:', err)
+      }
+    }
+  })
+  map.on(L.Draw.Event.DELETED, async e => {
+    e.layers.eachLayer(async layer => {
+      try { await api.delete(`/zones/${layer.zoneId}`) } catch (err) { console.error('❌ Error borrando zona:', err) }
+    })
+  })
 })
 
 watch(currentTile, () => {
