@@ -1,5 +1,5 @@
 <template>
-  <v-container class="pa-0" style="position: relative;">
+  <v-container class="pa-0" style="position: relative; height: 650px; width: 100%;">
     <v-select
       v-model="currentTile"
       :items="tiles.map(t => t.name)"
@@ -11,7 +11,7 @@
       color="black"
       :menu-props="{ contentClass: 'map-select-menu' }"
     />
-    <div ref="mapRef" style="height: 650px; width: 100%;"></div>
+    <div ref="mapRef" style="height: 100%; width: 100%;"></div>
   </v-container>
 </template>
 
