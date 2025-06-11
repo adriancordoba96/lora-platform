@@ -7,6 +7,8 @@
       hide-details
       density="compact"
       variant="outlined"
+      bg-color="white"
+      color="black"
     />
     <div ref="mapRef" style="height: 500px; width: 100%;"></div>
   </v-container>
