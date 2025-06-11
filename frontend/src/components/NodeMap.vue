@@ -95,7 +95,7 @@ onMounted(() => {
   map = L.map(mapRef.value).setView(center.value, zoom.value)
   tileLayer = L.tileLayer(activeTile.value.url, { attribution: activeTile.value.attribution }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
-  zoneLayer = L.layerGroup().addTo(map)
+  zoneLayer = L.featureGroup().addTo(map)
   updateMarkers()
   fetchZones()
   drawControl = new L.Control.Draw({ edit: { featureGroup: zoneLayer } })
