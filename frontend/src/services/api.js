@@ -9,8 +9,8 @@ const api = axios.create({
 export const login = (username, password) =>
   api.post('/login', { username, password })
 
-export const register = (username, email, password) =>
-  api.post('/register', { username, email, password })
+export const register = (username, email, password, phone) =>
+  api.post('/register', { username, email, password, phone })
 
 export const getNodes = (token) =>
   api.get('/nodes', {

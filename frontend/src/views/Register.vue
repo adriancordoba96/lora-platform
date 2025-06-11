@@ -18,6 +18,11 @@
           :error-messages="errors.email"
         />
         <v-text-field
+          :label="t('phone')"
+          v-model="phone"
+          :error-messages="errors.phone"
+        />
+        <v-text-field
           :label="t('password')"
           v-model="password"
           :type="showPassword ? 'text' : 'password'"
@@ -66,6 +71,7 @@ const lang = inject('lang', ref('es'))
 
 const username = ref('')
 const email = ref('')
+const phone = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const error = ref('')
@@ -73,7 +79,7 @@ const success = ref(false)
 const loading = ref(false)
 const showPassword = ref(false)
 
-const errors = ref({ username: '', email: '', password: '', confirm: '' })
+const errors = ref({ username: '', email: '', phone: '', password: '', confirm: '' })
 
 const t = (key) => {
   const texts = {
@@ -81,6 +87,7 @@ const t = (key) => {
       title: 'Registro de usuario',
       username: 'Usuario',
       email: 'Correo electrónico',
+      phone: 'Teléfono',
       password: 'Contraseña',
       confirm: 'Confirmar contraseña',
       register: 'Registrarse',
@@ -94,6 +101,7 @@ const t = (key) => {
       title: 'User Registration',
       username: 'Username',
       email: 'Email',
+      phone: 'Phone',
       password: 'Password',
       confirm: 'Confirm password',
       register: 'Register',
@@ -110,10 +118,11 @@ const t = (key) => {
 const registerUser = async () => {
   error.value = ''
   success.value = false
-  errors.value = { username: '', email: '', password: '', confirm: '' }
+  errors.value = { username: '', email: '', phone: '', password: '', confirm: '' }
 
   if (!username.value) errors.value.username = t('required')
   if (!email.value) errors.value.email = t('required')
+  if (!phone.value) errors.value.phone = t('required')
   if (!password.value) errors.value.password = t('required')
   if (!confirmPassword.value) errors.value.confirm = t('required')
   if (password.value && confirmPassword.value && password.value !== confirmPassword.value) {
@@ -124,10 +133,11 @@ const registerUser = async () => {
 
   loading.value = true
   try {
-    await register(username.value, email.value, password.value)
+    await register(username.value, email.value, password.value, phone.value)
     success.value = true
     username.value = ''
     email.value = ''
+    phone.value = ''
     password.value = ''
     confirmPassword.value = ''
   } catch (err) {

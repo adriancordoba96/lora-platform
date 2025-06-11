@@ -8,6 +8,7 @@ const mqtt = require('mqtt');
 const { InfluxDB } = require('@influxdata/influxdb-client');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
+const geolib = require('geolib');
 
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
@@ -38,20 +39,49 @@ function pointInPolygon(point, vs) {
   return inside;
 }
 
-function sendAlerts(userId, identifier, coords) {
+function distanceToPolygon(point, polygon) {
+  const p = { latitude: point[1], longitude: point[0] };
+  let min = Infinity;
+  for (let i = 0; i < polygon.length; i++) {
+    const a = { latitude: polygon[i][1], longitude: polygon[i][0] };
+    const b = { latitude: polygon[(i + 1) % polygon.length][1], longitude: polygon[(i + 1) % polygon.length][0] };
+    const d = geolib.getDistanceFromLine(p, a, b);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+function sendAlerts(userId, message) {
   db.get('SELECT * FROM alert_settings WHERE user_id = ?', [userId], (err, row) => {
-    if (err || !row) return;
-    const msg = `Nodo ${identifier} fuera de zona (${coords.join(',')})`;
-    if (row.email) {
-      transporter.sendMail({ from: 'cordobadrian1996@gmail.com', to: row.email, subject: 'Alerta de zona', text: msg }, err => err && console.error('❌ Mail:', err));
+    if (err) return;
+    if (row && row.email) {
+      transporter.sendMail(
+        { from: 'cordobadrian1996@gmail.com', to: row.email, subject: 'Alerta de zona', text: message },
+        err => err && console.error('❌ Mail:', err)
+      );
     }
-    if (row.telegram_token && row.telegram_chat_id) {
+    if (row && row.telegram_token && row.telegram_chat_id) {
       const url = `https://api.telegram.org/bot${row.telegram_token}/sendMessage`;
-      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: row.telegram_chat_id, text: msg }) }).catch(e => console.error('❌ Telegram:', e));
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: row.telegram_chat_id, text: message })
+      }).catch(e => console.error('❌ Telegram:', e));
     }
-    if (row.whatsapp_sid && row.whatsapp_token && row.whatsapp_from && row.whatsapp_to) {
-      const client = twilio(row.whatsapp_sid, row.whatsapp_token);
-      client.messages.create({ from: `whatsapp:${row.whatsapp_from}`, to: `whatsapp:${row.whatsapp_to}`, body: msg }).catch(e => console.error('❌ WhatsApp:', e));
+
+    const sid = process.env.TWILIO_SID || (row && row.whatsapp_sid);
+    const token = process.env.TWILIO_TOKEN || (row && row.whatsapp_token);
+    const from = process.env.TWILIO_FROM || (row && row.whatsapp_from);
+
+    if (sid && token && from) {
+      db.get('SELECT phone FROM users WHERE id = ?', [userId], (pErr, uRow) => {
+        if (pErr || !uRow || !uRow.phone) return;
+        const to = `whatsapp:${uRow.phone}`;
+        const client = twilio(sid, token);
+        client.messages
+          .create({ from: `whatsapp:${from}`, to, body: message })
+          .catch(e => console.error('❌ WhatsApp:', e));
+      });
     }
   });
 }
@@ -63,6 +93,7 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE,
     email TEXT UNIQUE,
     password TEXT,
+    phone TEXT,
     verified INTEGER DEFAULT 0
 )`);
 db.run(`CREATE TABLE IF NOT EXISTS nodes (
@@ -100,6 +131,18 @@ db.run(`CREATE TABLE IF NOT EXISTS alert_settings (
     whatsapp_from TEXT,
     whatsapp_to TEXT
 )`);
+
+// Ensure phone column exists for old databases
+db.all('PRAGMA table_info(users)', (err, cols) => {
+  if (err) {
+    console.error('❌ Error checking users schema:', err);
+    return;
+  }
+  const names = cols.map(c => c.name);
+  if (!names.includes('phone')) {
+    db.run('ALTER TABLE users ADD COLUMN phone TEXT');
+  }
+});
 
 // Ensure newer columns exist for older databases
 db.all('PRAGMA table_info(nodes)', (err, cols) => {
@@ -145,8 +188,8 @@ function authenticateToken(req, res, next) {
 
 //registrar
 app.post('/register', (req, res) => {
-  const { username, password, email } = req.body;
-  if (!username || !password || !email) {
+  const { username, password, email, phone } = req.body;
+  if (!username || !password || !email || !phone) {
     return res.status(400).send({ error: 'Campos incompletos' });
   }
 
@@ -157,8 +200,8 @@ app.post('/register', (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
 
     db.run(
-      `INSERT INTO users (username, email, password, verified) VALUES (?, ?, ?, ?)`,
-      [username, email, hash, 0],
+      `INSERT INTO users (username, email, password, phone, verified) VALUES (?, ?, ?, ?, ?)`,
+      [username, email, hash, phone, 0],
       function (err) {
         if (err) return res.status(500).send({ error: 'Error al crear usuario' });
 
@@ -375,15 +418,49 @@ mqttClient.on('message', (topic, message) => {
             if (nErr || !nodeRow || !nodeRow.location) return;
             const coords = nodeRow.location.split(',').map(Number);
             if (coords.length !== 2 || coords.some(isNaN)) return;
-            db.all('SELECT polygon FROM zones WHERE user_id = ?', [nodeRow.user_id], (zErr, zRows) => {
-              if (zErr) return;
-              const inside = zRows.some(z => pointInPolygon(coords, JSON.parse(z.polygon)));
-              if (!inside && nodeZoneStatus[identifier] !== false) {
-                sendAlerts(nodeRow.user_id, identifier, coords);
-                nodeZoneStatus[identifier] = false;
-              } else if (inside) {
-                nodeZoneStatus[identifier] = true;
+            db.all('SELECT name, polygon FROM zones WHERE user_id = ?', [nodeRow.user_id], (zErr, zRows) => {
+              if (zErr || !zRows.length) return;
+
+              let insideName = null;
+              let nearest = { dist: Infinity, name: null };
+
+              zRows.forEach(z => {
+                const poly = JSON.parse(z.polygon);
+                if (pointInPolygon(coords, poly)) {
+                  insideName = z.name;
+                }
+                const d = distanceToPolygon(coords, poly);
+                if (d < nearest.dist) {
+                  nearest = { dist: d, name: z.name };
+                }
+              });
+
+              const status = nodeZoneStatus[identifier] || { inside: true, count: 0, zone: nearest.name };
+
+              if (insideName) {
+                if (!status.inside) {
+                  sendAlerts(nodeRow.user_id, `Nodo ${identifier} ha entrado en el perímetro "${insideName}"`);
+                }
+                status.inside = true;
+                status.count = 0;
+                status.zone = insideName;
+              } else {
+                if (nearest.dist > 5) {
+                  status.count = (status.count || 0) + 1;
+                } else {
+                  status.count = 0;
+                }
+
+                if (status.inside && status.count > 3) {
+                  const zoneName = status.zone || nearest.name || 'zona';
+                  sendAlerts(nodeRow.user_id, `Nodo ${identifier} ha salido del perímetro "${zoneName}"`);
+                  status.inside = false;
+                  status.count = 0;
+                  status.zone = zoneName;
+                }
               }
+
+              nodeZoneStatus[identifier] = status;
             });
           });
         }
