@@ -53,7 +53,8 @@ const nodesWithCoords = computed(() =>
     .filter(Boolean)
 )
 
-const savedView = JSON.parse(localStorage.getItem('mapView') || '{}')
+let savedView = {}
+try { savedView = JSON.parse(localStorage.getItem('mapView') || '{}') } catch {}
 const center = ref(savedView.center || [0, 0])
 const zoom = ref(savedView.zoom || 5)
 let hasSavedView = Boolean(savedView.center)
@@ -106,11 +107,13 @@ onMounted(() => {
   fetchZones()
   drawControl = new L.Control.Draw({ edit: { featureGroup: zoneLayer } })
   map.addControl(drawControl)
-  map.on('moveend zoomend', () => {
+  const saveView = () => {
     const view = { center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom() }
     localStorage.setItem('mapView', JSON.stringify(view))
     hasSavedView = true
-  })
+  }
+  map.on('moveend', saveView)
+  map.on('zoomend', saveView)
   map.on(L.Draw.Event.CREATED, async e => {
     if (e.layerType === 'polygon') {
       const latlngs = e.layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng])
