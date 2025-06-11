@@ -25,3 +25,17 @@ npm run dev
 ```
 
 By default, the frontend Axios instance points to `http://3.66.72.52:3010`. Adjust this in `src/plugins/axios.js` if your backend runs elsewhere.
+
+## Simulation Script
+
+The `scripts/simulate-node.js` utility can be used to simulate a moving node. It
+requires an authentication token and the MQTT identifier of the node to update.
+
+```bash
+# Example usage
+TOKEN=your_jwt_token node scripts/simulate-node.js my-node-id
+```
+
+The script updates the node location every minute, staying inside the first zone
+defined in the database. Every five minutes it spends four minutes outside the
+zone before returning inside.

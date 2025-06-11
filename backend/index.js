@@ -357,6 +357,34 @@ app.post('/nodes/:identifier/state', authenticateToken, (req, res) => {
     );
 });
 
+// Actualizar ubicacion del nodo
+app.post('/nodes/:identifier/location', authenticateToken, (req, res) => {
+    const { identifier } = req.params;
+    const { location } = req.body;
+    if (!location) {
+        return res.status(400).send({ error: 'Falta la ubicacion' });
+    }
+
+    db.run(
+        `UPDATE nodes SET location = ? WHERE identifier = ? AND user_id = ?`,
+        [location, identifier, req.user.id],
+        function (err) {
+            if (err) {
+                console.error(err);
+                return res.status(500).send({ error: 'Error al actualizar ubicacion' });
+            }
+
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({ msg: 'Nodo actualizado', identifier, location }));
+                }
+            });
+
+            res.send({ message: 'Ubicacion actualizada' });
+        }
+    );
+});
+
 // Historial desde InfluxDB
 const influx = new InfluxDB({ url: 'http://localhost:8086', token: 'TOKEN_AQUI' });
 const queryApi = influx.getQueryApi('iot');
