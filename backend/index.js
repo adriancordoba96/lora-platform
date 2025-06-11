@@ -10,6 +10,12 @@ const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const geolib = require('geolib');
 
+// Twilio credentials are now configured directly in code instead of
+// relying on environment variables.
+const TWILIO_SID = 'your_twilio_sid';
+const TWILIO_TOKEN = 'your_twilio_token';
+const TWILIO_FROM = 'whatsapp:+1234567890';
+
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
@@ -69,9 +75,10 @@ function sendAlerts(userId, message) {
       }).catch(e => console.error('❌ Telegram:', e));
     }
 
-    const sid = process.env.TWILIO_SID || (row && row.whatsapp_sid);
-    const token = process.env.TWILIO_TOKEN || (row && row.whatsapp_token);
-    const from = process.env.TWILIO_FROM || (row && row.whatsapp_from);
+    // Use the hardcoded Twilio credentials defined at the top of the file.
+    const sid = TWILIO_SID || (row && row.whatsapp_sid);
+    const token = TWILIO_TOKEN || (row && row.whatsapp_token);
+    const from = TWILIO_FROM || (row && row.whatsapp_from);
 
     if (sid && token && from) {
       db.get('SELECT phone FROM users WHERE id = ?', [userId], (pErr, uRow) => {
