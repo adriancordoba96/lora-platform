@@ -9,8 +9,9 @@
       variant="outlined"
       bg-color="white"
       color="black"
+      :menu-props="{ contentClass: 'map-select-menu' }"
     />
-    <div ref="mapRef" style="height: 500px; width: 100%;"></div>
+    <div ref="mapRef" style="height: 650px; width: 100%;"></div>
   </v-container>
 </template>
 
@@ -152,5 +153,14 @@ watch(nodesWithCoords, updateMarkers)
   right: 8px;
   max-width: 150px;
   z-index: 1000;
+}
+
+.map-select-menu {
+  background-color: white;
+  color: black;
+}
+
+.map-select-menu .v-list-item-title {
+  color: black;
 }
 </style>
