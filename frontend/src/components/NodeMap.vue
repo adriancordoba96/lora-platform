@@ -53,8 +53,10 @@ const nodesWithCoords = computed(() =>
     .filter(Boolean)
 )
 
-const center = computed(() => nodesWithCoords.value[0]?.coords || [0, 0])
-const zoom = ref(5)
+const savedView = JSON.parse(localStorage.getItem('mapView') || '{}')
+const center = ref(savedView.center || [0, 0])
+const zoom = ref(savedView.zoom || 5)
+let hasSavedView = Boolean(savedView.center)
 
 const mapRef = ref(null)
 let map
@@ -90,7 +92,7 @@ function updateMarkers() {
   nodesWithCoords.value.forEach(n => {
     L.marker(n.coords).addTo(markerLayer).bindPopup(n.name)
   })
-  if (nodesWithCoords.value.length) {
+  if (nodesWithCoords.value.length && !hasSavedView) {
     map.setView(nodesWithCoords.value[0].coords, zoom.value)
   }
 }
@@ -104,6 +106,11 @@ onMounted(() => {
   fetchZones()
   drawControl = new L.Control.Draw({ edit: { featureGroup: zoneLayer } })
   map.addControl(drawControl)
+  map.on('moveend zoomend', () => {
+    const view = { center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom() }
+    localStorage.setItem('mapView', JSON.stringify(view))
+    hasSavedView = true
+  })
   map.on(L.Draw.Event.CREATED, async e => {
     if (e.layerType === 'polygon') {
       const latlngs = e.layer.getLatLngs()[0].map(ll => [ll.lat, ll.lng])
