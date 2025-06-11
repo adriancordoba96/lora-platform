@@ -12,6 +12,7 @@
     "@mdi/font": "^7.4.47",
     "axios": "^1.9.0",
     "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
     "sass": "^1.89.0",
     "sass-loader": "^12.6.0",
     "vite-plugin-vuetify": "^2.1.1",

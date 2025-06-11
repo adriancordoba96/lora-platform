@@ -7,6 +7,7 @@ const WebSocket = require('ws');
 const mqtt = require('mqtt');
 const { InfluxDB } = require('@influxdata/influxdb-client');
 const nodemailer = require('nodemailer');
+const twilio = require('twilio');
 
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
@@ -22,6 +23,38 @@ const SECRET = 'changeme_por_algo_fuerte';
 
 app.use(cors());
 app.use(express.json());
+
+const nodeZoneStatus = {};
+
+function pointInPolygon(point, vs) {
+  const x = point[0], y = point[1];
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][0], yi = vs[i][1];
+    const xj = vs[j][0], yj = vs[j][1];
+    const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function sendAlerts(userId, identifier, coords) {
+  db.get('SELECT * FROM alert_settings WHERE user_id = ?', [userId], (err, row) => {
+    if (err || !row) return;
+    const msg = `Nodo ${identifier} fuera de zona (${coords.join(',')})`;
+    if (row.email) {
+      transporter.sendMail({ from: 'cordobadrian1996@gmail.com', to: row.email, subject: 'Alerta de zona', text: msg }, err => err && console.error('❌ Mail:', err));
+    }
+    if (row.telegram_token && row.telegram_chat_id) {
+      const url = `https://api.telegram.org/bot${row.telegram_token}/sendMessage`;
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: row.telegram_chat_id, text: msg }) }).catch(e => console.error('❌ Telegram:', e));
+    }
+    if (row.whatsapp_sid && row.whatsapp_token && row.whatsapp_from && row.whatsapp_to) {
+      const client = twilio(row.whatsapp_sid, row.whatsapp_token);
+      client.messages.create({ from: `whatsapp:${row.whatsapp_from}`, to: `whatsapp:${row.whatsapp_to}`, body: msg }).catch(e => console.error('❌ WhatsApp:', e));
+    }
+  });
+}
 
 // Conexión a SQLite
 const db = new sqlite3.Database('lora.db');
@@ -49,6 +82,23 @@ db.run(`CREATE TABLE IF NOT EXISTS dashboards (
     name TEXT,
     layout TEXT,
     is_default INTEGER DEFAULT 0
+)`);
+db.run(`CREATE TABLE IF NOT EXISTS zones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    name TEXT,
+    polygon TEXT
+)`);
+db.run(`CREATE TABLE IF NOT EXISTS alert_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE,
+    telegram_token TEXT,
+    telegram_chat_id TEXT,
+    email TEXT,
+    whatsapp_sid TEXT,
+    whatsapp_token TEXT,
+    whatsapp_from TEXT,
+    whatsapp_to TEXT
 )`);
 
 // Ensure newer columns exist for older databases
@@ -320,6 +370,22 @@ mqttClient.on('message', (topic, message) => {
               }));
             }
           });
+
+          db.get('SELECT user_id, location FROM nodes WHERE identifier = ?', [identifier], (nErr, nodeRow) => {
+            if (nErr || !nodeRow || !nodeRow.location) return;
+            const coords = nodeRow.location.split(',').map(Number);
+            if (coords.length !== 2 || coords.some(isNaN)) return;
+            db.all('SELECT polygon FROM zones WHERE user_id = ?', [nodeRow.user_id], (zErr, zRows) => {
+              if (zErr) return;
+              const inside = zRows.some(z => pointInPolygon(coords, JSON.parse(z.polygon)));
+              if (!inside && nodeZoneStatus[identifier] !== false) {
+                sendAlerts(nodeRow.user_id, identifier, coords);
+                nodeZoneStatus[identifier] = false;
+              } else if (inside) {
+                nodeZoneStatus[identifier] = true;
+              }
+            });
+          });
         }
       }
     );
@@ -492,4 +558,97 @@ app.post('/dashboards', authenticateToken, (req, res) => {
   } else {
     saveDashboard();
   }
+});
+
+// Obtener zonas del usuario
+app.get('/zones', authenticateToken, (req, res) => {
+  db.all('SELECT * FROM zones WHERE user_id = ?', [req.user.id], (err, rows) => {
+    if (err) {
+      console.error('❌ Error fetching zones:', err);
+      return res.status(500).send({ error: 'Error al obtener zonas' });
+    }
+    const result = rows.map(r => ({ ...r, polygon: JSON.parse(r.polygon || '[]') }));
+    res.send(result);
+  });
+});
+
+// Crear zona
+app.post('/zones', authenticateToken, (req, res) => {
+  const { name, polygon } = req.body;
+  if (!name || !Array.isArray(polygon)) {
+    return res.status(400).send({ error: 'Datos incompletos' });
+  }
+  db.run('INSERT INTO zones (user_id, name, polygon) VALUES (?, ?, ?)', [req.user.id, name, JSON.stringify(polygon)], function (err) {
+    if (err) {
+      console.error('❌ Error inserting zone:', err);
+      return res.status(500).send({ error: 'Error al guardar zona' });
+    }
+    res.send({ id: this.lastID });
+  });
+});
+
+// Actualizar zona
+app.put('/zones/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { name, polygon } = req.body;
+  db.run('UPDATE zones SET name = ?, polygon = ? WHERE id = ? AND user_id = ?', [name, JSON.stringify(polygon), id, req.user.id], function (err) {
+    if (err) {
+      console.error('❌ Error updating zone:', err);
+      return res.status(500).send({ error: 'Error al actualizar zona' });
+    }
+    res.send({ message: 'Zona actualizada' });
+  });
+});
+
+// Eliminar zona
+app.delete('/zones/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM zones WHERE id = ? AND user_id = ?', [id, req.user.id], function (err) {
+    if (err) {
+      console.error('❌ Error deleting zone:', err);
+      return res.status(500).send({ error: 'Error al eliminar zona' });
+    }
+    res.send({ message: 'Zona eliminada' });
+  });
+});
+
+// Obtener configuración de alertas
+app.get('/alert-settings', authenticateToken, (req, res) => {
+  db.get('SELECT * FROM alert_settings WHERE user_id = ?', [req.user.id], (err, row) => {
+    if (err) {
+      console.error('❌ Error fetching alert settings:', err);
+      return res.status(500).send({ error: 'Error al obtener configuracion' });
+    }
+    if (!row) return res.send({});
+    res.send(row);
+  });
+});
+
+// Crear/actualizar configuración de alertas
+app.post('/alert-settings', authenticateToken, (req, res) => {
+  const { telegram_token, telegram_chat_id, email, whatsapp_sid, whatsapp_token, whatsapp_from, whatsapp_to } = req.body;
+  db.get('SELECT id FROM alert_settings WHERE user_id = ?', [req.user.id], (err, row) => {
+    if (err) {
+      console.error('❌ Error searching alert settings:', err);
+      return res.status(500).send({ error: 'Error al guardar configuracion' });
+    }
+    const params = [telegram_token, telegram_chat_id, email, whatsapp_sid, whatsapp_token, whatsapp_from, whatsapp_to, req.user.id];
+    if (row) {
+      db.run('UPDATE alert_settings SET telegram_token=?, telegram_chat_id=?, email=?, whatsapp_sid=?, whatsapp_token=?, whatsapp_from=?, whatsapp_to=? WHERE user_id=?', params, function (uErr) {
+        if (uErr) {
+          console.error('❌ Error updating alert settings:', uErr);
+          return res.status(500).send({ error: 'Error al guardar configuracion' });
+        }
+        res.send({ message: 'Configuracion actualizada' });
+      });
+    } else {
+      db.run('INSERT INTO alert_settings (telegram_token, telegram_chat_id, email, whatsapp_sid, whatsapp_token, whatsapp_from, whatsapp_to, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', params, function (iErr) {
+        if (iErr) {
+          console.error('❌ Error inserting alert settings:', iErr);
+          return res.status(500).send({ error: 'Error al guardar configuracion' });
+        }
+        res.send({ message: 'Configuracion guardada' });
+      });
+    }
+  });
 });
