@@ -1,10 +1,12 @@
 <template>
-  <v-container>
+  <v-container class="pa-0" style="position: relative;">
     <v-select
       v-model="currentTile"
       :items="tiles.map(t => t.name)"
-      label="Capa de mapa"
-      class="mb-2"
+      class="map-select"
+      hide-details
+      density="compact"
+      variant="outlined"
     />
     <div ref="mapRef" style="height: 500px; width: 100%;"></div>
   </v-container>
@@ -130,3 +132,13 @@ watch(currentTile, () => {
 
 watch(nodesWithCoords, updateMarkers)
 </script>
+
+<style scoped>
+.map-select {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  max-width: 150px;
+  z-index: 1000;
+}
+</style>
