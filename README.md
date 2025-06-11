@@ -12,6 +12,8 @@ npm install
 npm start
 ```
 
+The server will run even if optional packages like `twilio` or `geolib` are not installed, though WhatsApp alerts and distance calculations will use fallback implementations. To avoid warnings install all dependencies with `npm install`.
+
 The backend exposes routes such as `/zones` which are required by the frontend.
 
 ## Frontend
