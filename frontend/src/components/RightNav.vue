@@ -31,7 +31,6 @@ const items = [
   { value: 'nodes', icon: 'mdi-chip', title: 'Tus nodos' },
   { value: 'list', icon: 'mdi-format-list-bulleted', title: 'Lista de nodos' },
   { value: 'map', icon: 'mdi-map', title: 'Mapa' },
-  { value: 'alerts', icon: 'mdi-bell', title: 'Alertas' },
   { value: 'settings', icon: 'mdi-cog', title: 'Ajustes' }
 ]
 
