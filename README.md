@@ -39,9 +39,12 @@ Running the project will create a local `lora.db` SQLite database.  The `docs/ov
 
 The `scripts/simulate_node.js` file can publish fake sensor data to the MQTT
 broker every 30&nbsp;seconds.  It sends voltage, current, RSSI and a `location`
-string (`"lat,lng"`).  By default the script uses a small square as zone but you
-can provide your own polygon via the `ZONE_POLYGON` environment variable (path
-to a JSON file containing an array of `[lat, lng]` pairs).
+string (`"lat,lng"`).  If `API_URL` and `API_TOKEN` are provided the script
+fetches `/zones` from the backend and uses the first polygon returned so the
+simulated node follows the same area drawn in the web interface.  When these
+variables are not set it falls back to the polygon specified via the
+`ZONE_POLYGON` environment variable (path to a JSON file containing an array of
+`[lat, lng]` pairs).
 
 Example usage:
 
@@ -51,6 +54,5 @@ node scripts/simulate_node.js \
   MQTT_BROKER="mqtt://localhost:1883" \
   ZONE_POLYGON=./myZone.json
 ```
-
 The simulated node mostly stays inside the zone but occasionally leaves it for a
 couple of minutes so that alert notifications can be tested.

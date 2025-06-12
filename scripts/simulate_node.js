@@ -1,6 +1,9 @@
 const mqtt = require('mqtt');
 const fs = require('fs');
 
+const apiUrl = process.env.API_URL || 'http://localhost:3010';
+const apiToken = process.env.API_TOKEN || null;
+
 const brokerUrl = process.env.MQTT_BROKER || 'mqtt://localhost:1883';
 const topic = process.env.MQTT_TOPIC || 'nodos/demo/data';
 const polygonFile = process.env.ZONE_POLYGON || null;
@@ -18,6 +21,28 @@ if (polygonFile) {
     polygon = JSON.parse(data);
   } catch (e) {
     console.error('Failed to load polygon from', polygonFile, e.message);
+  }
+}
+
+async function loadPolygon() {
+  if (!apiToken) return;
+  try {
+    const res = await fetch(`${apiUrl}/zones`, {
+      headers: { Authorization: `Bearer ${apiToken}` }
+    });
+    if (res.ok) {
+      const zones = await res.json();
+      if (zones && zones.length) {
+        polygon = zones[0].polygon;
+        console.log('Loaded polygon from API');
+      } else {
+        console.warn('No zones returned, using default polygon');
+      }
+    } else {
+      console.warn('Failed to fetch zones:', res.status);
+    }
+  } catch (e) {
+    console.error('Error fetching zones:', e.message);
   }
 }
 
@@ -71,12 +96,20 @@ function randomPointOutside(poly) {
 }
 
 let outsideSteps = 0;
-const client = mqtt.connect(brokerUrl);
-client.on('connect', () => {
-  console.log('Connected to', brokerUrl);
-  send();
-  setInterval(send, 30000);
-});
+
+let client;
+
+async function start() {
+  await loadPolygon();
+  client = mqtt.connect(brokerUrl);
+  client.on('connect', () => {
+    console.log('Connected to', brokerUrl);
+    send();
+    setInterval(send, 30000);
+  });
+}
+
+start();
 
 function send() {
   const voltage = randomIn(218, 235).toFixed(2);
