@@ -150,6 +150,7 @@ const load = () => {
   left: 56px;
   top: 0;
   height: 100%;
+  z-index: 1100;
 }
 .settings-content {
   position: fixed;
@@ -159,5 +160,6 @@ const load = () => {
   bottom: 0;
   overflow-y: auto;
   background: white;
+  z-index: 1100;
 }
 </style>
