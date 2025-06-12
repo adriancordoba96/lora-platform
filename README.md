@@ -34,3 +34,23 @@ By default the frontend assumes the backend is reachable at `http://3.66.72.52:3
 ## Additional notes
 
 Running the project will create a local `lora.db` SQLite database.  The `docs/overview.md` file contains a short summary of the architecture.
+
+## Node simulation
+
+The `scripts/simulate_node.js` file can publish fake sensor data to the MQTT
+broker every 30&nbsp;seconds.  It sends voltage, current, RSSI and a `location`
+string (`"lat,lng"`).  By default the script uses a small square as zone but you
+can provide your own polygon via the `ZONE_POLYGON` environment variable (path
+to a JSON file containing an array of `[lat, lng]` pairs).
+
+Example usage:
+
+```bash
+node scripts/simulate_node.js \
+  MQTT_TOPIC="nodos/demo/data" \
+  MQTT_BROKER="mqtt://localhost:1883" \
+  ZONE_POLYGON=./myZone.json
+```
+
+The simulated node mostly stays inside the zone but occasionally leaves it for a
+couple of minutes so that alert notifications can be tested.

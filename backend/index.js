@@ -228,11 +228,11 @@ mqttClient.on('message', (topic, message) => {
     const data = JSON.parse(message.toString());
     const parts = topic.split('/');
     const identifier = parts[1];
-    const { voltage, current, rssi } = data;
+    const { voltage, current, rssi, location } = data;
 
     db.run(
-      `UPDATE nodes SET voltage = ?, current = ?, rssi = ? WHERE identifier = ?`,
-      [voltage, current, rssi, identifier],
+      `UPDATE nodes SET voltage = ?, current = ?, rssi = ?, location = COALESCE(?, location) WHERE identifier = ?`,
+      [voltage, current, rssi, location, identifier],
       (err) => {
         if (err) {
           console.error('❌ Error al actualizar nodo:', err);
@@ -247,7 +247,8 @@ mqttClient.on('message', (topic, message) => {
                 identifier,
                 voltage,
                 current,
-                rssi
+                rssi,
+                location
               }));
             }
           });
