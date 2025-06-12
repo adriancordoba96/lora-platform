@@ -1,10 +1,15 @@
 # Lora Platform
 
-This project contains a frontend built with Vue 3 and a backend written in Node.js.
+This repository hosts a simple IoT platform to manage LoRa nodes.  It is split into two main folders:
+
+- `backend` – an Express server storing data in SQLite and exposing a REST API
+- `frontend` – a Vue 3 application (built with Vite and Vuetify) that consumes the API
+
+Both parts require **Node.js 18+**.
 
 ## Backend
 
-Make sure to run the backend using the provided start script so that the correct entry point (`index.js`) is used:
+The backend listens on port **3010**.  Start it with the included script so `index.js` is used as the entry point:
 
 ```bash
 cd backend
@@ -12,11 +17,11 @@ npm install
 npm start
 ```
 
-The backend exposes routes such as `/zones` which are required by the frontend.
+The server supports MQTT ingestion, WebSocket notifications and optional integrations with InfluxDB, email and WhatsApp.  Credentials for these services are defined at the top of `backend/index.js` and should be adjusted before deployment.  Edit the `TWILIO_*` constants, the Gmail `transporter` credentials and the InfluxDB token as needed.
 
 ## Frontend
 
-The frontend can be started with Vite:
+Launch the web client with Vite:
 
 ```bash
 cd frontend
@@ -24,4 +29,8 @@ npm install
 npm run dev
 ```
 
-By default, the frontend Axios instance points to `http://3.66.72.52:3010`. Adjust this in `src/plugins/axios.js` if your backend runs elsewhere.
+By default the frontend assumes the backend is reachable at `http://3.66.72.52:3010`.  Update `src/plugins/axios.js` and `src/services/api.js` if your API runs elsewhere.  A WebSocket connection is opened to the same host to receive live node updates.
+
+## Additional notes
+
+Running the project will create a local `lora.db` SQLite database.  The `docs/overview.md` file contains a short summary of the architecture.
