@@ -4,7 +4,7 @@
       v-for="node in localNodes"
       :key="node.id"
       class="grid-item"
-      :style="{ left: node.x + 'px', top: node.y + 'px' }"
+      :style="getItemStyle(node)"
       @mousedown="startDrag(node, $event)"
     >
       <v-card class="node-card">
@@ -66,7 +66,8 @@ import { ref, watch, defineProps, defineEmits } from 'vue'
 import VueSpeedometer from 'vue-speedometer'
 
 const props = defineProps({
-  nodes: { type: Array, default: () => [] }
+  nodes: { type: Array, default: () => [] },
+  scale: { type: Number, default: 1 }
 })
 
 const emit = defineEmits(['update:nodes', 'toggle'])
@@ -88,6 +89,18 @@ const offsetY = ref(0)
 
 const NODE_WIDTH = 240
 const NODE_HEIGHT = 230
+const GRID_SIZE = 50
+
+function getItemStyle(node) {
+  return {
+    left: node.x + 'px',
+    top: node.y + 'px',
+    width: NODE_WIDTH / props.scale + 'px',
+    height: NODE_HEIGHT / props.scale + 'px',
+    transform: `scale(${props.scale})`,
+    transformOrigin: 'top left'
+  }
+}
 
 function startDrag(node, e) {
   dragging.value = node
@@ -104,8 +117,8 @@ function onMouseMove(e) {
   let y = e.clientY - rect.top - offsetY.value
   x = Math.max(0, Math.min(x, rect.width - NODE_WIDTH))
   y = Math.max(0, Math.min(y, rect.height - NODE_HEIGHT))
-  dragging.value.x = x
-  dragging.value.y = y
+  dragging.value.x = Math.round(x / GRID_SIZE) * GRID_SIZE
+  dragging.value.y = Math.round(y / GRID_SIZE) * GRID_SIZE
 }
 
 function stopDrag() {
@@ -130,7 +143,11 @@ function toggleButton(node) {
   position: relative;
   width: 100%;
   height: 650px;
-  background: #f5f5f5;
+  background-color: #f5f5f5;
+  background-image:
+    linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
+  background-size: 50px 50px;
   overflow: hidden;
 }
 .grid-item {
