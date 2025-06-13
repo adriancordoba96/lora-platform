@@ -1,63 +1,38 @@
 <template>
   <v-app>
-  <RightNav v-model="activeSection" @open-settings="goToSettings" />
-    <NodeDrawer
-      v-model="drawer"
+    <RightNav model-value="settings" @open-settings="null" />
+    <PanelSettings
+      v-model="open"
+      :cols="perRow"
+      :dashboards="Object.keys(dashboards.layouts)"
+      :default-dash="dashboards.default"
       :nodes="nodes"
       :panel-nodes="panelNodes"
-      @add="addToPanel"
-      @remove="removeFromPanel"
-      @refresh="fetchNodes"
-      />
-
-      <v-main>
-      <v-container>
-        <v-row>
-          <v-col cols="12">
-            <v-tabs v-model="activeDashboard" class="mb-4">
-              <v-tab
-                v-for="(layout, name) in dashboards.layouts"
-                :key="name"
-                :value="name"
-              >
-                {{ name }}
-              </v-tab>
-            </v-tabs>
-          </v-col>
-        </v-row>
-        <NodePanel
-          v-if="activeSection === 'panel'"
-          :nodes="panelNodes"
-          :per-row="perRow"
-          @toggle="toggleNode"
-        />
-        <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
-        <NodeMap v-else-if="activeSection === 'map'" :nodes="nodes" />
-      </v-container>
-    </v-main>
+      full-page
+      @update:cols="perRow = $event"
+      @save-dashboard="saveDashboard"
+      @load-dashboard="loadDashboard"
+      @update:defaultDash="setDefaultDashboard"
+      @add-node="addToPanel"
+      @remove-node="removeFromPanel"
+      @refresh-nodes="fetchNodes"
+    />
   </v-app>
 </template>
 
 <script setup>
-import NodeDrawer from '@/components/NodeDrawer.vue'
-import NodePanel from '@/components/NodePanel.vue'
-import NodeList from '@/components/NodeList.vue'
-import NodeMap from '@/components/NodeMap.vue'
 import RightNav from '@/components/RightNav.vue'
+import PanelSettings from '@/components/PanelSettings.vue'
 import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import api from '@/plugins/axios'
 
+const open = ref(true)
 const nodes = ref([])
 const panelNodes = ref([])
 const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
-const drawer = ref(false)
-const activeSection = ref('panel')
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
 const selectedDashboard = ref('')
-const router = useRouter()
-const goToSettings = () => router.push('/settings')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
 let firstLoad = true
@@ -81,14 +56,6 @@ watch(activeDashboard, val => {
     panelNodes.value = ids
       .map(id => nodes.value.find(n => n.id === id))
       .filter(n => n)
-  }
-})
-
-watch(activeSection, val => {
-  if (val === 'nodes') {
-    drawer.value = true
-  } else if (drawer.value) {
-    drawer.value = false
   }
 })
 
@@ -138,16 +105,6 @@ watch(panelNodes, () => {
   }
 }, { deep: true })
 
-const toggleNode = async (node) => {
-  try {
-    await api.post(`/nodes/${node.identifier}/state`, {
-      state: node.state ? 1 : 0,
-    })
-  } catch (err) {
-    console.error('❌ Error al actualizar estado:', err)
-  }
-}
-
 const setDefaultDashboard = async (name) => {
   dashboards.value.default = name
   selectedDashboard.value = name
@@ -176,8 +133,5 @@ const loadDashboard = async (name) => {
 
 onMounted(() => {
   fetchNodes().then(loadDashboards)
-  const socket = new WebSocket('ws://3.66.72.52:3010')
-  socket.addEventListener('message', fetchNodes)
 })
 </script>
-
