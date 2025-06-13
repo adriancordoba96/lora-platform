@@ -29,6 +29,7 @@
           :nodes="panelNodes"
           :per-row="perRow"
           @toggle="toggleNode"
+          @update:nodes="panelNodes = $event"
         />
         <NodeList v-else-if="activeSection === 'list'" :nodes="nodes" />
         <NodeMap v-else-if="activeSection === 'map'" :nodes="nodes" />

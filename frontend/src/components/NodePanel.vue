@@ -1,13 +1,18 @@
 <template>
   <v-container>
-    <v-row>
-      <v-col
-        v-for="node in nodes"
-        :key="node.id"
-        cols="12"
-        :sm="columnSpan"
-        :md="columnSpan"
-      >
+    <draggable
+      v-model="localNodes"
+      item-key="id"
+      class="v-row d-flex flex-wrap"
+      :animation="200"
+      @update:modelValue="emitUpdate"
+    >
+      <template #item="{ element: node }">
+        <v-col
+          cols="12"
+          :sm="columnSpan"
+          :md="columnSpan"
+        >
         <v-card class="ma-2">
           <v-card-title class="d-flex justify-space-between align-center">
             {{ node.name }}
@@ -59,13 +64,15 @@
           </v-row>
         </v-card>
       </v-col>
-    </v-row>
+      </template>
+    </draggable>
   </v-container>
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { defineProps, defineEmits, computed, ref, watch } from 'vue'
 import VueSpeedometer from 'vue-speedometer'
+import draggable from 'vuedraggable'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
@@ -73,6 +80,20 @@ const props = defineProps({
 })
 
 const columnSpan = computed(() => Math.floor(12 / props.perRow))
+
+const localNodes = ref([...props.nodes])
+
+watch(
+  () => props.nodes,
+  val => {
+    localNodes.value = [...val]
+  },
+  { deep: true }
+)
+
+const emitUpdate = () => {
+  emit('update:nodes', localNodes.value)
+}
 
 const emit = defineEmits(['toggle'])
 
