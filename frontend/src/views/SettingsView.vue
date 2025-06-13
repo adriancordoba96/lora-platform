@@ -1,6 +1,5 @@
 <template>
   <v-app>
-    <RightNav model-value="settings" @open-settings="null" />
     <PanelSettings
       v-model="open"
       :cols="perRow"
@@ -21,7 +20,6 @@
 </template>
 
 <script setup>
-import RightNav from '@/components/RightNav.vue'
 import PanelSettings from '@/components/PanelSettings.vue'
 import { ref, onMounted, watch } from 'vue'
 import api from '@/plugins/axios'
