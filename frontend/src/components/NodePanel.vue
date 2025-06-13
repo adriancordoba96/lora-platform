@@ -1,5 +1,5 @@
 <template>
-  <div class="panel-scale" :style="wrapperStyle">
+  <div class="panel-scale">
     <v-container>
       <draggable
       v-model="localNodes"
@@ -14,7 +14,7 @@
           :sm="columnSpan"
           :md="columnSpan"
         >
-        <v-card class="ma-2">
+        <v-card class="ma-2" :style="itemStyle">
           <v-card-title class="d-flex justify-space-between align-center">
             {{ node.name }}
             <v-btn
@@ -87,7 +87,7 @@ const columnSpan = computed(() => {
   return Math.floor(12 / columns)
 })
 
-const wrapperStyle = computed(() => ({
+const itemStyle = computed(() => ({
   transform: `scale(${props.scale})`,
   transformOrigin: 'top left',
   width: `${100 / props.scale}%`
