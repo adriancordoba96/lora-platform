@@ -82,7 +82,10 @@ const props = defineProps({
   scale: { type: Number, default: 1 }
 })
 
-const columnSpan = computed(() => Math.floor(12 / props.perRow))
+const columnSpan = computed(() => {
+  const columns = Math.max(1, Math.floor(props.perRow / props.scale))
+  return Math.floor(12 / columns)
+})
 
 const wrapperStyle = computed(() => ({
   transform: `scale(${props.scale})`,
