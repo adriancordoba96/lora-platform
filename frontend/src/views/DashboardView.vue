@@ -1,6 +1,5 @@
 <template>
   <v-app>
-  <RightNav v-model="activeSection" @open-settings="goToSettings" />
     <NodeDrawer
       v-model="drawer"
       :nodes="nodes"
@@ -43,8 +42,7 @@ import NodeDrawer from '@/components/NodeDrawer.vue'
 import NodePanel from '@/components/NodePanel.vue'
 import NodeList from '@/components/NodeList.vue'
 import NodeMap from '@/components/NodeMap.vue'
-import RightNav from '@/components/RightNav.vue'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/plugins/axios'
 
@@ -53,11 +51,10 @@ const panelNodes = ref([])
 const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
 const drawer = ref(false)
-const activeSection = ref('panel')
+const activeSection = inject('activeSection', ref('panel'))
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
 const selectedDashboard = ref('')
 const router = useRouter()
-const goToSettings = () => router.push('/settings')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
 let firstLoad = true

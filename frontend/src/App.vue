@@ -41,6 +41,8 @@
       </v-menu>
     </v-app-bar>
 
+    <RightNav v-model="activeSection" @open-settings="goSettings" />
+
     <v-main>
       <router-view :lang="selectedLang" />
     </v-main>
@@ -48,8 +50,9 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, provide, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import RightNav from '@/components/RightNav.vue'
 
 const selectedLang = ref('es')
 provide('lang', selectedLang)
@@ -57,6 +60,30 @@ provide('lang', selectedLang)
 const username = ref('')
 const loggedIn = ref(false)
 const router = useRouter()
+const route = useRoute()
+
+const activeSection = ref('panel')
+provide('activeSection', activeSection)
+
+watch(activeSection, val => {
+  if (val === 'settings') {
+    if (route.path !== '/settings') router.push('/settings')
+  } else {
+    if (route.path !== '/dashboard') router.push('/dashboard')
+  }
+})
+
+watch(
+  () => route.path,
+  path => {
+    if (path === '/settings') {
+      activeSection.value = 'settings'
+    } else if (path === '/dashboard' && activeSection.value === 'settings') {
+      activeSection.value = 'panel'
+    }
+  },
+  { immediate: true }
+)
 
 const updateAuth = () => {
   username.value = localStorage.getItem('username') || ''
@@ -78,5 +105,9 @@ const logout = () => {
   updateAuth()
   window.dispatchEvent(new Event('auth-changed'))
   router.push('/login')
+}
+
+const goSettings = () => {
+  activeSection.value = 'settings'
 }
 </script>
