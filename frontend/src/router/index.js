@@ -6,6 +6,7 @@ import LandingView from '../views/LandingView.vue'
 import Recover from '../views/Recover.vue'
 import ResetPassword from '../views/ResetPassword.vue'
 import ProfileView from '../views/ProfileView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const routes = [
 { path: '/', name: 'Landing', component: LandingView },
@@ -14,7 +15,8 @@ const routes = [
   { path: '/register', component: Register },
   { path: '/recover', component: Recover },
   { path: '/reset', component: ResetPassword },
-  { path: '/profile', component: ProfileView }
+  { path: '/profile', component: ProfileView },
+  { path: '/settings', component: SettingsView }
 ]
 
 const router = createRouter({

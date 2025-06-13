@@ -1,10 +1,11 @@
 <template>
   <v-navigation-drawer
     v-model="localOpen"
-    absolute
+    :permanent="props.fullPage"
+    :absolute="!props.fullPage"
     location="left"
     width="200"
-    class="settings-drawer"
+    :class="['settings-drawer', { 'full-page-drawer': props.fullPage }]"
   >
     <v-card flat>
       <v-card-title>Ajustes</v-card-title>
@@ -22,7 +23,7 @@
     </v-card>
   </v-navigation-drawer>
 
-  <div v-if="localOpen" class="settings-content">
+  <div v-if="props.fullPage || localOpen" class="settings-content" :class="{ 'full-page-content': props.fullPage }">
     <v-card flat class="pa-4">
       <template v-if="activeItem === 'dashboard'">
         <v-slider
@@ -77,7 +78,7 @@
 
       <v-card-actions class="mt-4">
         <v-spacer></v-spacer>
-        <v-btn text @click="localOpen = false">Cerrar</v-btn>
+        <v-btn text @click="close">Cerrar</v-btn>
       </v-card-actions>
     </v-card>
   </div>
@@ -85,6 +86,7 @@
 
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
+import { useRouter } from 'vue-router'
 import AlertSettings from './AlertSettings.vue'
 import NodeSettings from './NodeSettings.vue'
 
@@ -94,7 +96,8 @@ const props = defineProps({
   dashboards: { type: Array, default: () => [] },
   defaultDash: { type: String, default: '' },
   nodes: { type: Array, default: () => [] },
-  panelNodes: { type: Array, default: () => [] }
+  panelNodes: { type: Array, default: () => [] },
+  fullPage: { type: Boolean, default: false }
 })
 
 const emit = defineEmits([
@@ -143,6 +146,15 @@ const load = () => {
     emit('load-dashboard', selectedDash.value)
   }
 }
+
+const router = useRouter()
+const close = () => {
+  if (props.fullPage) {
+    router.back()
+  } else {
+    localOpen.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -151,6 +163,11 @@ const load = () => {
   top: 0;
   height: 100%;
   z-index: 1100;
+}
+.full-page-drawer {
+  position: relative;
+  left: 0;
+  z-index: auto;
 }
 .settings-content {
   position: fixed;
@@ -161,5 +178,12 @@ const load = () => {
   overflow-y: auto;
   background: white;
   z-index: 1100;
+}
+.full-page-content {
+  position: relative;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 }
 </style>
