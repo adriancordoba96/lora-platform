@@ -28,6 +28,7 @@
           v-if="activeSection === 'panel'"
           :nodes="panelNodes"
           :per-row="perRow"
+          :scale="panelScale"
           @toggle="toggleNode"
           @update:nodes="panelNodes = $event"
         />
@@ -54,10 +55,12 @@ const activeDashboard = ref('')
 const drawer = ref(false)
 const activeSection = inject('activeSection', ref('panel'))
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
+const panelScale = ref(parseFloat(localStorage.getItem('panelScale')) || 1)
 const selectedDashboard = ref('')
 const router = useRouter()
 
 watch(perRow, val => localStorage.setItem('perRow', val))
+watch(panelScale, val => localStorage.setItem('panelScale', val))
 let firstLoad = true
 
 watch(panelNodes, async val => {
