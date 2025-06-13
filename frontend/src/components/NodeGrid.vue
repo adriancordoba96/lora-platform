@@ -1,5 +1,5 @@
 <template>
-  <div class="grid" ref="gridRef">
+  <div class="grid" ref="gridRef" :style="gridStyle">
     <div
       v-for="node in localNodes"
       :key="node.id"
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, watch, defineProps, defineEmits, computed } from 'vue'
 import VueSpeedometer from 'vue-speedometer'
 
 const props = defineProps({
@@ -91,12 +91,20 @@ const NODE_WIDTH = 240
 const NODE_HEIGHT = 230
 const GRID_SIZE = 50
 
+const nodeWidth = computed(() => NODE_WIDTH * props.scale)
+const nodeHeight = computed(() => NODE_HEIGHT * props.scale)
+const gridSize = computed(() => GRID_SIZE * props.scale)
+
+const gridStyle = computed(() => ({
+  backgroundSize: `${gridSize.value}px ${gridSize.value}px`
+}))
+
 function getItemStyle(node) {
   return {
-    left: node.x + 'px',
-    top: node.y + 'px',
-    width: NODE_WIDTH / props.scale + 'px',
-    height: NODE_HEIGHT / props.scale + 'px',
+    left: node.x * props.scale + 'px',
+    top: node.y * props.scale + 'px',
+    width: NODE_WIDTH + 'px',
+    height: NODE_HEIGHT + 'px',
     transform: `scale(${props.scale})`,
     transformOrigin: 'top left'
   }
@@ -115,10 +123,10 @@ function onMouseMove(e) {
   const rect = gridRef.value.getBoundingClientRect()
   let x = e.clientX - rect.left - offsetX.value
   let y = e.clientY - rect.top - offsetY.value
-  x = Math.max(0, Math.min(x, rect.width - NODE_WIDTH))
-  y = Math.max(0, Math.min(y, rect.height - NODE_HEIGHT))
-  dragging.value.x = Math.round(x / GRID_SIZE) * GRID_SIZE
-  dragging.value.y = Math.round(y / GRID_SIZE) * GRID_SIZE
+  x = Math.max(0, Math.min(x, rect.width - nodeWidth.value))
+  y = Math.max(0, Math.min(y, rect.height - nodeHeight.value))
+  dragging.value.x = Math.round(x / gridSize.value) * GRID_SIZE
+  dragging.value.y = Math.round(y / gridSize.value) * GRID_SIZE
 }
 
 function stopDrag() {
@@ -147,7 +155,6 @@ function toggleButton(node) {
   background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
     linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
-  background-size: 50px 50px;
   overflow: hidden;
 }
 .grid-item {
