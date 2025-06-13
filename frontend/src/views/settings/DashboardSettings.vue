@@ -3,12 +3,14 @@
     <PanelSettings
       v-model="open"
       :cols="perRow"
+      :scale="panelScale"
       :dashboards="Object.keys(dashboards.layouts)"
       :default-dash="dashboards.default"
       :nodes="nodes"
       :panel-nodes="panelNodes"
       full-page
       @update:cols="perRow = $event"
+      @update:scale="panelScale = $event"
       @save-dashboard="saveDashboard"
       @load-dashboard="loadDashboard"
       @update:defaultDash="setDefaultDashboard"
@@ -30,9 +32,11 @@ const panelNodes = ref([])
 const dashboards = ref({ default: '', layouts: {} })
 const activeDashboard = ref('')
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
+const panelScale = ref(parseFloat(localStorage.getItem('panelScale')) || 1)
 const selectedDashboard = ref('')
 
 watch(perRow, val => localStorage.setItem('perRow', val))
+watch(panelScale, val => localStorage.setItem('panelScale', val))
 let firstLoad = true
 
 watch(panelNodes, async val => {

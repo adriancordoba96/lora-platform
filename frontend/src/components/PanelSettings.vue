@@ -35,6 +35,16 @@
           label="Nodos por fila"
         ></v-slider>
 
+        <v-slider
+          v-model="localScale"
+          :min="0.5"
+          :max="2"
+          step="0.1"
+          thumb-label
+          class="mt-4"
+          label="Escala del panel"
+        ></v-slider>
+
         <v-text-field
           v-model="dashboardName"
           label="Nombre del dashboard"
@@ -93,6 +103,7 @@ import NodeSettings from './NodeSettings.vue'
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   cols: { type: Number, default: 3 },
+  scale: { type: Number, default: 1 },
   dashboards: { type: Array, default: () => [] },
   defaultDash: { type: String, default: '' },
   nodes: { type: Array, default: () => [] },
@@ -103,6 +114,7 @@ const props = defineProps({
 const emit = defineEmits([
   'update:modelValue',
   'update:cols',
+  'update:scale',
   'save-dashboard',
   'load-dashboard',
   'update:defaultDash',
@@ -113,6 +125,7 @@ const emit = defineEmits([
 
 const localOpen = ref(props.modelValue)
 const localCols = ref(props.cols)
+const localScale = ref(props.scale)
 const dashboardName = ref('')
 const selectedDash = ref(props.defaultDash)
 const defaultDashLocal = ref(props.defaultDash)
@@ -126,12 +139,14 @@ const items = [
 
 watch(() => props.modelValue, v => (localOpen.value = v))
 watch(() => props.cols, v => (localCols.value = v))
+watch(() => props.scale, v => (localScale.value = v))
 watch(() => props.defaultDash, v => {
   selectedDash.value = v
   defaultDashLocal.value = v
 })
 watch(localOpen, v => emit('update:modelValue', v))
 watch(localCols, v => emit('update:cols', v))
+watch(localScale, v => emit('update:scale', v))
 watch(defaultDashLocal, v => emit('update:defaultDash', v))
 
 const save = () => {

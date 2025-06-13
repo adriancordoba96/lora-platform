@@ -1,12 +1,13 @@
 <template>
-  <v-container>
-    <draggable
+  <div class="panel-scale" :style="wrapperStyle">
+    <v-container>
+      <draggable
       v-model="localNodes"
       item-key="id"
       class="v-row d-flex flex-wrap"
       :animation="200"
       @update:modelValue="emitUpdate"
-    >
+      >
       <template #item="{ element: node }">
         <v-col
           cols="12"
@@ -65,8 +66,9 @@
         </v-card>
       </v-col>
       </template>
-    </draggable>
-  </v-container>
+      </draggable>
+    </v-container>
+  </div>
 </template>
 
 <script setup>
@@ -76,10 +78,17 @@ import draggable from 'vuedraggable'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
-  perRow: { type: Number, default: 3 }
+  perRow: { type: Number, default: 3 },
+  scale: { type: Number, default: 1 }
 })
 
 const columnSpan = computed(() => Math.floor(12 / props.perRow))
+
+const wrapperStyle = computed(() => ({
+  transform: `scale(${props.scale})`,
+  transformOrigin: 'top left',
+  width: `${100 / props.scale}%`
+}))
 
 const localNodes = ref([...props.nodes])
 
@@ -106,3 +115,9 @@ const toggleButton = (node) => {
   toggleNode(node)
 }
 </script>
+
+<style scoped>
+.panel-scale {
+  overflow: visible;
+}
+</style>
