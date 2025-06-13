@@ -10,7 +10,7 @@
       />
 
       <v-main>
-      <v-container>
+      <v-container fluid class="fill-height">
         <v-row>
           <v-col cols="12">
             <v-tabs v-model="activeDashboard" class="mb-4">

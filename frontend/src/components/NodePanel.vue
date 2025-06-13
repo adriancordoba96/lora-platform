@@ -1,6 +1,6 @@
 <template>
-  <div class="panel-scale">
-    <v-container>
+  <div class="panel-scale fill-height">
+    <v-container fluid class="fill-height">
       <draggable
       v-model="localNodes"
       item-key="id"
@@ -122,5 +122,7 @@ const toggleButton = (node) => {
 <style scoped>
 .panel-scale {
   overflow: visible;
+  width: 100%;
+  height: 100%;
 }
 </style>
