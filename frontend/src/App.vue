@@ -68,6 +68,8 @@ provide('activeSection', activeSection)
 watch(activeSection, val => {
   if (val === 'settings') {
     if (route.path !== '/settings') router.push('/settings')
+  } else if (val === 'map') {
+    if (route.path !== '/map') router.push('/map')
   } else {
     if (route.path !== '/dashboard') router.push('/dashboard')
   }
@@ -78,7 +80,12 @@ watch(
   path => {
     if (path === '/settings') {
       activeSection.value = 'settings'
-    } else if (path === '/dashboard' && activeSection.value === 'settings') {
+    } else if (path === '/map') {
+      activeSection.value = 'map'
+    } else if (
+      path === '/dashboard' &&
+      (activeSection.value === 'settings' || activeSection.value === 'map')
+    ) {
       activeSection.value = 'panel'
     }
   },
