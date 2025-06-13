@@ -24,11 +24,9 @@
             </v-tabs>
           </v-col>
         </v-row>
-        <NodePanel
+        <NodeGrid
           v-if="activeSection === 'panel'"
           :nodes="panelNodes"
-          :per-row="perRow"
-          :scale="panelScale"
           @toggle="toggleNode"
           @update:nodes="panelNodes = $event"
         />
@@ -41,7 +39,7 @@
 
 <script setup>
 import NodeDrawer from '@/components/NodeDrawer.vue'
-import NodePanel from '@/components/NodePanel.vue'
+import NodeGrid from '@/components/NodeGrid.vue'
 import NodeList from '@/components/NodeList.vue'
 import NodeMap from '@/components/NodeMap.vue'
 import { ref, onMounted, watch, inject } from 'vue'
@@ -96,7 +94,12 @@ watch(activeSection, val => {
 const fetchNodes = async () => {
   try {
     const res = await api.get('/nodes')
-    nodes.value = res.data.map(n => ({ ...n, state: Boolean(n.state) }))
+    nodes.value = res.data.map((n, i) => ({
+      ...n,
+      state: Boolean(n.state),
+      x: n.x ?? (i % 4) * 250,
+      y: n.y ?? Math.floor(i / 4) * 250
+    }))
     if (firstLoad && selectedDashboard.value) {
       loadDashboard(selectedDashboard.value)
       firstLoad = false
