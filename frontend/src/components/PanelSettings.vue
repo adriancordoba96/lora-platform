@@ -29,7 +29,7 @@
         <v-slider
           v-model="localCols"
           :min="1"
-          :max="4"
+          :max="12"
           step="1"
           thumb-label
           label="Nodos por fila"
