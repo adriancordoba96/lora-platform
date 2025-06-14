@@ -1,24 +1,22 @@
 <template>
-  <v-card class="pa-4">
-    <PanelSettings
-      v-model="open"
-      :cols="perRow"
-      :scale="panelScale"
-      :dashboards="Object.keys(dashboards.layouts)"
-      :default-dash="dashboards.default"
-      :nodes="nodes"
-      :panel-nodes="panelNodes"
-      full-page
-      @update:cols="perRow = $event"
-      @update:scale="panelScale = $event"
-      @save-dashboard="saveDashboard"
-      @load-dashboard="loadDashboard"
-      @update:defaultDash="setDefaultDashboard"
-      @add-node="addToPanel"
-      @remove-node="removeFromPanel"
-      @refresh-nodes="fetchNodes"
-    />
-  </v-card>
+  <PanelSettings
+    v-model="open"
+    :cols="perRow"
+    :scale="panelScale"
+    :dashboards="Object.keys(dashboards.layouts)"
+    :default-dash="dashboards.default"
+    :nodes="nodes"
+    :panel-nodes="panelNodes"
+    full-page
+    @update:cols="perRow = $event"
+    @update:scale="panelScale = $event"
+    @save-dashboard="saveDashboard"
+    @load-dashboard="loadDashboard"
+    @update:defaultDash="setDefaultDashboard"
+    @add-node="addToPanel"
+    @remove-node="removeFromPanel"
+    @refresh-nodes="fetchNodes"
+  />
 </template>
 
 <script setup>
