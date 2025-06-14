@@ -66,6 +66,10 @@
       </v-card>
     </div>
     </div>
+    <div class="zoom-controls">
+      <v-btn density="compact" icon @click="zoomIn"><v-icon>mdi-plus</v-icon></v-btn>
+      <v-btn density="compact" icon @click="zoomOut"><v-icon>mdi-minus</v-icon></v-btn>
+    </div>
   </div>
 </template>
 
@@ -159,7 +163,7 @@ function getItemStyle(node) {
     top: node.yIndex * gridSizeY.value + offset + 'px',
     width: NODE_WIDTH + 'px',
     height: NODE_HEIGHT + 'px',
-    transform: `scale(${props.nodeScale})`,
+    transform: `scale(${props.nodeScale / scale.value})`,
     transformOrigin: 'top left'
   }
 }
@@ -231,10 +235,25 @@ function stopPan() {
 
 function onWheel(e) {
   const delta = e.deltaY > 0 ? -0.1 : 0.1
-  const newScale = Math.min(3, Math.max(0.5, scale.value + delta))
   const rect = gridRef.value.getBoundingClientRect()
-  const x = (e.clientX - rect.left) / scale.value
-  const y = (e.clientY - rect.top) / scale.value
+  applyZoom(e.clientX, e.clientY, delta, rect)
+}
+
+function zoomIn() {
+  const rect = gridRef.value.getBoundingClientRect()
+  applyZoom(rect.left + rect.width / 2, rect.top + rect.height / 2, 0.1, rect)
+}
+
+function zoomOut() {
+  const rect = gridRef.value.getBoundingClientRect()
+  applyZoom(rect.left + rect.width / 2, rect.top + rect.height / 2, -0.1, rect)
+}
+
+function applyZoom(cx, cy, delta, rect) {
+  const newScale = Math.min(3, Math.max(0.5, scale.value + delta))
+  rect = rect || gridRef.value.getBoundingClientRect()
+  const x = (cx - rect.left) / scale.value
+  const y = (cy - rect.top) / scale.value
   translateX.value -= x * (newScale - scale.value)
   translateY.value -= y * (newScale - scale.value)
   scale.value = newScale
@@ -316,6 +335,16 @@ function getDistance(touches) {
 .node-card {
   width: 100%;
   height: 100%;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
 }
 </style>
 
