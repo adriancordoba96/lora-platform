@@ -117,6 +117,27 @@ let pinchStartScale = 1
 const dragging = ref(null)
 const offsetX = ref(0)
 const offsetY = ref(0)
+const GRID_SIZE = 5
+
+function snapToGrid(value) {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE
+}
+
+function isColliding(node, x, y) {
+  for (const other of localNodes.value) {
+    if (other.id !== node.id) {
+      if (
+        x < other.x + NODE_WIDTH &&
+        x + NODE_WIDTH > other.x &&
+        y < other.y + NODE_HEIGHT &&
+        y + NODE_HEIGHT > other.y
+      ) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 let savedView = {}
 try { savedView = JSON.parse(localStorage.getItem('panelView') || '{}') } catch {}
@@ -157,7 +178,7 @@ function getItemStyle(node) {
     top: node.y + 'px',
     width: NODE_WIDTH + 'px',
     height: NODE_HEIGHT + 'px',
-    transform: `scale(${props.nodeScale / scale.value})`,
+    transform: `scale(${props.nodeScale})`,
     transformOrigin: 'top left'
   }
 }
@@ -173,10 +194,14 @@ function startDrag(node, e) {
 function onMouseMove(e) {
   if (!dragging.value || !gridRef.value) return
   const rect = gridRef.value.getBoundingClientRect()
-  const x = (e.clientX - rect.left) / scale.value - offsetX.value
-  const y = (e.clientY - rect.top) / scale.value - offsetY.value
-  dragging.value.x = x
-  dragging.value.y = y
+  const rawX = (e.clientX - rect.left) / scale.value - offsetX.value
+  const rawY = (e.clientY - rect.top) / scale.value - offsetY.value
+  const snappedX = snapToGrid(rawX)
+  const snappedY = snapToGrid(rawY)
+  if (!isColliding(dragging.value, snappedX, snappedY)) {
+    dragging.value.x = snappedX
+    dragging.value.y = snappedY
+  }
 }
 
 function stopDrag() {
@@ -308,7 +333,10 @@ function getDistance(touches) {
 }
 .grid {
   position: relative;
-  background-color: #f5f5f5;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(#e0e0e0 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, #e0e0e0 0 1px, transparent 1px 5px);
+  background-size: 5px 5px;
 }
 .grid-item {
   position: absolute;
