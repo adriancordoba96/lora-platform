@@ -1,7 +1,6 @@
 <template>
   <div
     class="grid-container"
-    ref="containerRef"
     :style="containerStyle"
     @wheel.prevent="onWheel"
     @mousedown="startPan"
@@ -102,7 +101,6 @@ watch(
   { deep: true }
 )
 
-const containerRef = ref(null)
 const gridRef = ref(null)
 const translateX = ref(0)
 const translateY = ref(0)
@@ -139,10 +137,7 @@ const gridSize = computed(() => {
 const spacing = computed(() => gridSize.value - nodeWidth.value)
 const gridSizeY = computed(() => nodeHeight.value + spacing.value)
 
-const containerStyle = computed(() => ({
-  transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
-  transformOrigin: 'top left'
-}))
+const containerStyle = computed(() => ({}))
 
 function updateGridWidth() {
   gridWidth.value = gridRef.value?.clientWidth || 0
@@ -160,7 +155,9 @@ watch([translateX, translateY, scale], () => {
 })
 
 const gridStyle = computed(() => ({
-  backgroundSize: `${gridSize.value}px ${gridSizeY.value}px`
+  backgroundSize: `${gridSize.value}px ${gridSizeY.value}px`,
+  transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
+  transformOrigin: 'top left'
 }))
 
 function getItemStyle(node) {
