@@ -39,7 +39,7 @@
         <NodeGrid
           v-if="activeSection === 'panel'"
           :nodes="panelNodes"
-          :scale="panelScale"
+          :node-scale="panelScale"
           :per-row="perRow"
           @toggle="toggleNode"
           @update:nodes="panelNodes = $event"
