@@ -1,17 +1,36 @@
 <template>
-  <v-container class="pa-0" style="position: relative; height: 650px; width: 100%;">
-    <v-select
-      v-model="currentTile"
-      :items="tiles.map(t => t.name)"
-      class="map-select"
-      hide-details
-      density="compact"
-      variant="outlined"
-      bg-color="white"
-      color="black"
-      :menu-props="{ contentClass: 'map-select-menu' }"
-    />
-    <div ref="mapRef" style="height: 100%; width: 100%;"></div>
+  <v-container
+    class="pa-0 d-flex map-wrapper"
+    style="position: relative; height: 750px; width: 100%; margin-top: 16px;"
+  >
+    <div class="group-panel">
+      <v-list density="compact">
+        <v-list-item v-for="g in groups" :key="g" class="px-2">
+          <v-checkbox
+            v-model="selectedGroups"
+            :value="g"
+            :label="g"
+            hide-details
+            density="compact"
+            color="primary"
+          />
+        </v-list-item>
+      </v-list>
+    </div>
+    <div class="map-container">
+      <v-select
+        v-model="currentTile"
+        :items="tiles.map(t => t.name)"
+        class="map-select"
+        hide-details
+        density="compact"
+        variant="outlined"
+        bg-color="white"
+        color="black"
+        :menu-props="{ contentClass: 'map-select-menu' }"
+      />
+      <div ref="mapRef" style="height: 100%; width: 100%;"></div>
+    </div>
   </v-container>
 </template>
 
@@ -40,11 +59,23 @@ const tiles = [
   }
 ]
 
-const currentTile = ref(tiles[0].name)
+const currentTile = ref(tiles[1].name)
 const activeTile = computed(() => tiles.find(t => t.name === currentTile.value))
+
+const groups = computed(() => {
+  const all = props.nodes.map(n => n.group || 'Sin Grupo')
+  return [...new Set(all)]
+})
+
+const selectedGroups = ref([])
+
+watch(groups, g => {
+  selectedGroups.value = [...g]
+})
 
 const nodesWithCoords = computed(() =>
   props.nodes
+    .filter(n => selectedGroups.value.includes(n.group || 'Sin Grupo'))
     .map(n => {
       if (!n.location) return null
       const [lat, lng] = n.location.split(',').map(Number)
@@ -144,6 +175,7 @@ watch(currentTile, () => {
 })
 
 watch(nodesWithCoords, updateMarkers)
+watch(selectedGroups, updateMarkers)
 </script>
 
 <style scoped>
@@ -162,5 +194,17 @@ watch(nodesWithCoords, updateMarkers)
 
 .map-select-menu .v-list-item-title {
   color: black;
+}
+
+.group-panel {
+  width: 200px;
+  background: white;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.map-container {
+  position: relative;
+  flex: 1;
 }
 </style>
