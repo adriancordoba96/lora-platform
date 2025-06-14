@@ -189,7 +189,7 @@ onMounted(() => {
 
 <style scoped>
 .dashboard-bg {
-  background-color: #f0f0f0;
+  background-color: #000;
 }
 </style>
 
