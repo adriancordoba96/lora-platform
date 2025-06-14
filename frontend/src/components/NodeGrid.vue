@@ -62,22 +62,33 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, computed } from 'vue'
+import { ref, watch, defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
 import VueSpeedometer from 'vue-speedometer'
 
 const props = defineProps({
   nodes: { type: Array, default: () => [] },
-  scale: { type: Number, default: 1 }
+  scale: { type: Number, default: 1 },
+  perRow: { type: Number, default: 3 }
 })
 
 const emit = defineEmits(['update:nodes', 'toggle'])
 
-const localNodes = ref(props.nodes.map(n => ({ ...n })))
+const localNodes = ref(
+  props.nodes.map((n, i) => ({
+    ...n,
+    xIndex: n.xIndex ?? (i % props.perRow),
+    yIndex: n.yIndex ?? Math.floor(i / props.perRow)
+  }))
+)
 
 watch(
   () => props.nodes,
   val => {
-    localNodes.value = val.map(n => ({ ...n }))
+    localNodes.value = val.map((n, i) => ({
+      ...n,
+      xIndex: n.xIndex ?? (i % props.perRow),
+      yIndex: n.yIndex ?? Math.floor(i / props.perRow)
+    }))
   },
   { deep: true }
 )
@@ -88,21 +99,38 @@ const offsetX = ref(0)
 const offsetY = ref(0)
 
 const NODE_WIDTH = 240
-const NODE_HEIGHT = 230
-const GRID_SIZE = 50
+const NODE_HEIGHT = 260
+const DEFAULT_GRID = 260
 
 const nodeWidth = computed(() => NODE_WIDTH * props.scale)
 const nodeHeight = computed(() => NODE_HEIGHT * props.scale)
-const gridSize = computed(() => GRID_SIZE * props.scale)
+
+const gridWidth = ref(0)
+const gridSize = computed(() => {
+  if (!gridWidth.value || !props.perRow) return DEFAULT_GRID * props.scale
+  return (gridWidth.value / props.perRow)
+})
+const spacing = computed(() => gridSize.value - nodeWidth.value)
+
+function updateGridWidth() {
+  gridWidth.value = gridRef.value?.clientWidth || 0
+}
+
+onMounted(() => {
+  updateGridWidth()
+  window.addEventListener('resize', updateGridWidth)
+})
+onUnmounted(() => window.removeEventListener('resize', updateGridWidth))
 
 const gridStyle = computed(() => ({
   backgroundSize: `${gridSize.value}px ${gridSize.value}px`
 }))
 
 function getItemStyle(node) {
+  const offset = spacing.value / 2
   return {
-    left: node.x * props.scale + 'px',
-    top: node.y * props.scale + 'px',
+    left: node.xIndex * gridSize.value + offset + 'px',
+    top: node.yIndex * gridSize.value + offset + 'px',
     width: NODE_WIDTH + 'px',
     height: NODE_HEIGHT + 'px',
     transform: `scale(${props.scale})`,
@@ -125,8 +153,13 @@ function onMouseMove(e) {
   let y = e.clientY - rect.top - offsetY.value
   x = Math.max(0, Math.min(x, rect.width - nodeWidth.value))
   y = Math.max(0, Math.min(y, rect.height - nodeHeight.value))
-  dragging.value.x = Math.round(x / gridSize.value) * GRID_SIZE
-  dragging.value.y = Math.round(y / gridSize.value) * GRID_SIZE
+  const col = Math.round(x / gridSize.value)
+  const row = Math.round(y / gridSize.value)
+  const occupied = localNodes.value.some(n => n !== dragging.value && n.xIndex === col && n.yIndex === row)
+  if (!occupied) {
+    dragging.value.xIndex = col
+    dragging.value.yIndex = row
+  }
 }
 
 function stopDrag() {
@@ -160,7 +193,7 @@ function toggleButton(node) {
 .grid-item {
   position: absolute;
   width: 240px;
-  height: 230px;
+  height: 260px;
   cursor: move;
 }
 .node-card {

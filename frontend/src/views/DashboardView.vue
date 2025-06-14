@@ -28,6 +28,7 @@
           v-if="activeSection === 'panel'"
           :nodes="panelNodes"
           :scale="panelScale"
+          :per-row="perRow"
           @toggle="toggleNode"
           @update:nodes="panelNodes = $event"
         />
