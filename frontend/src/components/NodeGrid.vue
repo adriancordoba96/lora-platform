@@ -1,9 +1,10 @@
 <template>
   <div
     class="grid-container"
+    ref="containerRef"
     :style="containerStyle"
     @wheel.prevent="onWheel"
-    @mousedown="startPan"
+    @mousedown="onContainerMouseDown"
     @touchstart="onTouchStart"
   >
     <div class="grid" ref="gridRef" :style="gridStyle">
@@ -11,6 +12,7 @@
         v-for="node in localNodes"
         :key="node.id"
         class="grid-item"
+        :class="{ selected: selectedNodes.has(node.id) }"
         :style="getItemStyle(node)"
         @mousedown.stop="startDrag(node, $event)"
       >
@@ -66,6 +68,7 @@
       </v-card>
     </div>
     </div>
+    <div v-if="selection.active" class="selection-rect" :style="selectionStyle"></div>
     <div class="zoom-controls">
       <v-btn density="compact" icon @click="zoomIn"><v-icon>mdi-plus</v-icon></v-btn>
       <v-btn density="compact" icon @click="zoomOut"><v-icon>mdi-minus</v-icon></v-btn>
@@ -105,7 +108,10 @@ watch(
   { deep: true }
 )
 
+const containerRef = ref(null)
 const gridRef = ref(null)
+const selectedNodes = ref(new Set())
+const selection = ref({ active: false, startX: 0, startY: 0, endX: 0, endY: 0 })
 const translateX = ref(0)
 const translateY = ref(0)
 const scale = ref(1)
@@ -114,9 +120,7 @@ let startPanX = 0
 let startPanY = 0
 let pinchDistance = 0
 let pinchStartScale = 1
-const dragging = ref(null)
-const offsetX = ref(0)
-const offsetY = ref(0)
+const dragData = ref(null)
 const GRID_SIZE = 5
 
 function snapToGrid(value) {
@@ -172,6 +176,15 @@ const gridStyle = computed(() => ({
   transformOrigin: 'top left'
 }))
 
+const selectionStyle = computed(() => {
+  if (!selection.value.active) return {}
+  const x = Math.min(selection.value.startX, selection.value.endX)
+  const y = Math.min(selection.value.startY, selection.value.endY)
+  const w = Math.abs(selection.value.endX - selection.value.startX)
+  const h = Math.abs(selection.value.endY - selection.value.startY)
+  return { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }
+})
+
 function getItemStyle(node) {
   return {
     left: node.x + 'px',
@@ -183,30 +196,90 @@ function getItemStyle(node) {
   }
 }
 
+function onContainerMouseDown(e) {
+  if (e.button === 1) {
+    startPan(e)
+  } else if (e.button === 0) {
+    startSelection(e)
+  }
+}
+
+function startSelection(e) {
+  if (!containerRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  selection.value = {
+    active: true,
+    startX: e.clientX - rect.left,
+    startY: e.clientY - rect.top,
+    endX: e.clientX - rect.left,
+    endY: e.clientY - rect.top
+  }
+  document.addEventListener('mousemove', onSelectionMove)
+  document.addEventListener('mouseup', endSelection)
+}
+
+function onSelectionMove(e) {
+  if (!selection.value.active || !containerRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  selection.value.endX = e.clientX - rect.left
+  selection.value.endY = e.clientY - rect.top
+}
+
+function endSelection() {
+  if (!selection.value.active || !containerRef.value || !gridRef.value) return
+  const rect = containerRef.value.getBoundingClientRect()
+  const gridRect = gridRef.value.getBoundingClientRect()
+  const x1 = Math.min(selection.value.startX, selection.value.endX) + rect.left
+  const y1 = Math.min(selection.value.startY, selection.value.endY) + rect.top
+  const x2 = Math.max(selection.value.startX, selection.value.endX) + rect.left
+  const y2 = Math.max(selection.value.startY, selection.value.endY) + rect.top
+  const gx1 = (x1 - gridRect.left) / scale.value
+  const gy1 = (y1 - gridRect.top) / scale.value
+  const gx2 = (x2 - gridRect.left) / scale.value
+  const gy2 = (y2 - gridRect.top) / scale.value
+  selectedNodes.value = new Set(
+    localNodes.value
+      .filter(
+        n => gx1 < n.x + NODE_WIDTH && gx2 > n.x && gy1 < n.y + NODE_HEIGHT && gy2 > n.y
+      )
+      .map(n => n.id)
+  )
+  selection.value.active = false
+  document.removeEventListener('mousemove', onSelectionMove)
+  document.removeEventListener('mouseup', endSelection)
+}
+
 function startDrag(node, e) {
-  dragging.value = node
-  offsetX.value = e.offsetX / (props.nodeScale * scale.value)
-  offsetY.value = e.offsetY / (props.nodeScale * scale.value)
+  if (e.button !== 0) return
+  if (!selectedNodes.value.has(node.id)) {
+    selectedNodes.value = new Set([node.id])
+  }
+  const nodes = [...selectedNodes.value].map(id => {
+    const n = localNodes.value.find(n => n.id === id)
+    return { node: n, startX: n.x, startY: n.y }
+  })
+  dragData.value = { startX: e.clientX, startY: e.clientY, nodes }
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', stopDrag)
 }
 
 function onMouseMove(e) {
-  if (!dragging.value || !gridRef.value) return
-  const rect = gridRef.value.getBoundingClientRect()
-  const rawX = (e.clientX - rect.left) / scale.value - offsetX.value
-  const rawY = (e.clientY - rect.top) / scale.value - offsetY.value
-  const snappedX = snapToGrid(rawX)
-  const snappedY = snapToGrid(rawY)
-  if (!isColliding(dragging.value, snappedX, snappedY)) {
-    dragging.value.x = snappedX
-    dragging.value.y = snappedY
-  }
+  if (!dragData.value) return
+  const dx = (e.clientX - dragData.value.startX) / scale.value
+  const dy = (e.clientY - dragData.value.startY) / scale.value
+  dragData.value.nodes.forEach(d => {
+    const snappedX = snapToGrid(d.startX + dx)
+    const snappedY = snapToGrid(d.startY + dy)
+    if (!isColliding(d.node, snappedX, snappedY)) {
+      d.node.x = snappedX
+      d.node.y = snappedY
+    }
+  })
 }
 
 function stopDrag() {
-  if (dragging.value) emit('update:nodes', localNodes.value)
-  dragging.value = null
+  if (dragData.value) emit('update:nodes', localNodes.value)
+  dragData.value = null
   document.removeEventListener('mousemove', onMouseMove)
   document.removeEventListener('mouseup', stopDrag)
 }
@@ -221,7 +294,7 @@ function toggleButton(node) {
 }
 
 function startPan(e) {
-  if (e.button !== undefined && e.button !== 0) return
+  if (e.button !== undefined && e.button !== 1) return
   panning.value = true
   startPanX = e.clientX
   startPanY = e.clientY
@@ -341,6 +414,16 @@ function getDistance(touches) {
 .grid-item {
   position: absolute;
   cursor: move;
+}
+.grid-item.selected {
+  outline: 2px solid #42a5f5;
+}
+.selection-rect {
+  position: absolute;
+  border: 1px dashed #42a5f5;
+  background-color: rgba(66, 165, 245, 0.2);
+  pointer-events: none;
+  z-index: 9;
 }
 .node-card {
   width: 100%;
