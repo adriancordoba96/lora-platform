@@ -88,8 +88,8 @@ const emit = defineEmits(['update:nodes', 'toggle'])
 const localNodes = ref(
   props.nodes.map((n, i) => ({
     ...n,
-    xIndex: n.xIndex ?? (i % props.perRow),
-    yIndex: n.yIndex ?? Math.floor(i / props.perRow)
+    x: n.x ?? (i % props.perRow) * 250,
+    y: n.y ?? Math.floor(i / props.perRow) * 300
   }))
 )
 
@@ -98,8 +98,8 @@ watch(
   val => {
     localNodes.value = val.map((n, i) => ({
       ...n,
-      xIndex: n.xIndex ?? (i % props.perRow),
-      yIndex: n.yIndex ?? Math.floor(i / props.perRow)
+      x: n.x ?? (i % props.perRow) * 250,
+      y: n.y ?? Math.floor(i / props.perRow) * 300
     }))
   },
   { deep: true }
@@ -126,20 +126,16 @@ scale.value = savedView.scale || 1
 
 const NODE_WIDTH = 240
 const NODE_HEIGHT = 280
-const DEFAULT_GRID = 260
-const BASE_SPACING = 20
 
-const nodeWidth = computed(() => NODE_WIDTH * props.nodeScale)
-const nodeHeight = computed(() => NODE_HEIGHT * props.nodeScale)
+const gridWidthPx = computed(() => {
+  const max = Math.max(0, ...localNodes.value.map(n => n.x + NODE_WIDTH * props.nodeScale))
+  return max + 500
+})
 
-const gridSize = computed(() => DEFAULT_GRID * props.nodeScale)
-const spacing = computed(() => gridSize.value - nodeWidth.value)
-const gridSizeY = computed(() => nodeHeight.value + spacing.value)
-
-const maxCol = computed(() => Math.max(0, ...localNodes.value.map(n => n.xIndex)))
-const maxRow = computed(() => Math.max(0, ...localNodes.value.map(n => n.yIndex)))
-const gridWidthPx = computed(() => (maxCol.value + 1) * gridSize.value)
-const gridHeightPx = computed(() => (maxRow.value + 1) * gridSizeY.value)
+const gridHeightPx = computed(() => {
+  const max = Math.max(0, ...localNodes.value.map(n => n.y + NODE_HEIGHT * props.nodeScale))
+  return max + 500
+})
 
 const containerStyle = computed(() => ({}))
 
@@ -151,16 +147,14 @@ watch([translateX, translateY, scale], () => {
 const gridStyle = computed(() => ({
   width: gridWidthPx.value + 'px',
   height: gridHeightPx.value + 'px',
-  backgroundSize: `${gridSize.value}px ${gridSizeY.value}px`,
   transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
   transformOrigin: 'top left'
 }))
 
 function getItemStyle(node) {
-  const offset = spacing.value / 2
   return {
-    left: node.xIndex * gridSize.value + offset + 'px',
-    top: node.yIndex * gridSizeY.value + offset + 'px',
+    left: node.x + 'px',
+    top: node.y + 'px',
     width: NODE_WIDTH + 'px',
     height: NODE_HEIGHT + 'px',
     transform: `scale(${props.nodeScale / scale.value})`,
@@ -179,19 +173,10 @@ function startDrag(node, e) {
 function onMouseMove(e) {
   if (!dragging.value || !gridRef.value) return
   const rect = gridRef.value.getBoundingClientRect()
-  let x = (e.clientX - rect.left) / scale.value - offsetX.value
-  let y = (e.clientY - rect.top) / scale.value - offsetY.value
-  const maxX = gridWidthPx.value - nodeWidth.value
-  const maxY = gridHeightPx.value - nodeHeight.value
-  x = Math.max(0, Math.min(x, maxX))
-  y = Math.max(0, Math.min(y, maxY))
-  const col = Math.round(x / gridSize.value)
-  const row = Math.round(y / gridSizeY.value)
-  const occupied = localNodes.value.some(n => n !== dragging.value && n.xIndex === col && n.yIndex === row)
-  if (!occupied) {
-    dragging.value.xIndex = col
-    dragging.value.yIndex = row
-  }
+  const x = (e.clientX - rect.left) / scale.value - offsetX.value
+  const y = (e.clientY - rect.top) / scale.value - offsetY.value
+  dragging.value.x = x
+  dragging.value.y = y
 }
 
 function stopDrag() {
@@ -324,9 +309,6 @@ function getDistance(touches) {
 .grid {
   position: relative;
   background-color: #f5f5f5;
-  background-image:
-    linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
 }
 .grid-item {
   position: absolute;
