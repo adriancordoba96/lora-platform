@@ -208,7 +208,8 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: white;
+  /* Match global dark theme */
+  background: #242424;
 }
 </style>
 
