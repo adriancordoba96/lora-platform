@@ -10,8 +10,8 @@
       />
 
       <v-main>
-      <v-container fluid class="fill-height">
-        <v-row>
+      <v-container fluid class="fill-height pt-0 dashboard-bg">
+        <v-row class="mt-0">
           <v-col cols="12">
             <v-tabs v-model="activeDashboard" class="mb-4">
               <v-tab
@@ -186,4 +186,10 @@ onMounted(() => {
   socket.addEventListener('message', fetchNodes)
 })
 </script>
+
+<style scoped>
+.dashboard-bg {
+  background-color: #f0f0f0;
+}
+</style>
 
