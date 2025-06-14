@@ -95,6 +95,7 @@ const localNodes = ref(
     y: n.y ?? Math.floor(i / props.perRow) * 300
   }))
 )
+resolveCollisions()
 
 watch(
   () => props.nodes,
@@ -104,6 +105,7 @@ watch(
       x: n.x ?? (i % props.perRow) * 250,
       y: n.y ?? Math.floor(i / props.perRow) * 300
     }))
+    resolveCollisions()
   },
   { deep: true }
 )
@@ -131,16 +133,49 @@ function isColliding(node, x, y) {
   for (const other of localNodes.value) {
     if (other.id !== node.id) {
       if (
-        x < other.x + NODE_WIDTH &&
-        x + NODE_WIDTH > other.x &&
-        y < other.y + NODE_HEIGHT &&
-        y + NODE_HEIGHT > other.y
+        x + NODE_WIDTH > other.x - NODE_SPACING &&
+        x - NODE_SPACING < other.x + NODE_WIDTH &&
+        y + NODE_HEIGHT > other.y - NODE_SPACING &&
+        y - NODE_SPACING < other.y + NODE_HEIGHT
       ) {
         return true
       }
     }
   }
   return false
+}
+
+function findNearestPosition(node, x, y) {
+  const start = { x: snapToGrid(x), y: snapToGrid(y) }
+  const queue = [start]
+  const visited = new Set([`${start.x},${start.y}`])
+  while (queue.length) {
+    const pos = queue.shift()
+    if (!isColliding(node, pos.x, pos.y)) return pos
+    const neighbors = [
+      { x: pos.x + GRID_SIZE, y: pos.y },
+      { x: pos.x - GRID_SIZE, y: pos.y },
+      { x: pos.x, y: pos.y + GRID_SIZE },
+      { x: pos.x, y: pos.y - GRID_SIZE }
+    ]
+    for (const n of neighbors) {
+      const key = `${n.x},${n.y}`
+      if (!visited.has(key)) {
+        visited.add(key)
+        queue.push(n)
+      }
+    }
+  }
+  return start
+}
+
+function resolveCollisions() {
+  for (const node of localNodes.value) {
+    const pos = findNearestPosition(node, node.x, node.y)
+    node.x = pos.x
+    node.y = pos.y
+  }
+  emit('update:nodes', localNodes.value)
 }
 
 let savedView = {}
@@ -151,6 +186,7 @@ scale.value = savedView.scale || 1
 
 const NODE_WIDTH = 240
 const NODE_HEIGHT = 280
+const NODE_SPACING = NODE_WIDTH * 0.05
 
 const gridWidthPx = computed(() => {
   const max = Math.max(0, ...localNodes.value.map(n => n.x + NODE_WIDTH * props.nodeScale))
