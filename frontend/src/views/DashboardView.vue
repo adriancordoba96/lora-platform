@@ -11,8 +11,11 @@
 
       <v-main>
       <v-container fluid class="fill-height pt-0 dashboard-bg">
-        <v-row class="mt-0">
-          <v-col cols="12">
+        <v-row
+          v-if="activeSection === 'panel'"
+          class="mt-0 align-center dashboard-tabs"
+        >
+          <v-col>
             <v-tabs v-model="activeDashboard" class="mb-4">
               <v-tab
                 v-for="(layout, name) in dashboards.layouts"
@@ -22,6 +25,15 @@
                 {{ name }}
               </v-tab>
             </v-tabs>
+          </v-col>
+          <v-col cols="auto">
+            <v-select
+              v-model="panelScale"
+              :items="scaleOptions"
+              label="Escala"
+              density="compact"
+              style="max-width: 100px"
+            />
           </v-col>
         </v-row>
         <NodeGrid
@@ -56,6 +68,7 @@ const drawer = ref(false)
 const activeSection = inject('activeSection', ref('panel'))
 const perRow = ref(parseInt(localStorage.getItem('perRow')) || 3)
 const panelScale = ref(parseFloat(localStorage.getItem('panelScale')) || 1)
+const scaleOptions = Array.from({ length: 10 }, (_, i) => (i + 1) * 0.2)
 const selectedDashboard = ref('')
 const router = useRouter()
 
@@ -190,6 +203,12 @@ onMounted(() => {
 <style scoped>
 .dashboard-bg {
   background-color: #000;
+}
+.dashboard-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: white;
 }
 </style>
 
