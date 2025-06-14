@@ -44,7 +44,7 @@
               <div class="text-body-2">{{ node.current ?? 'N/A' }} A</div>
             </v-col>
           </v-row>
-          <v-row class="pb-0 justify-center">
+          <v-row class="pb-0 justify-center mt-n4">
             <v-col cols="12" class="d-flex justify-center">
               <vue-speedometer
                 :value="Number(node.current) || 0"
@@ -52,7 +52,7 @@
                 :max-value="10"
                 :needle-color="'#424242'"
                 :ring-width="20"
-                :text-color="'#333'"
+                :text-color="'#fff'"
                 :value-text-font-size="'22px'"
                 :custom-segment-stops="[0, 7.5, 10]"
                 :segment-colors="['#4caf50', '#fb8c00']"

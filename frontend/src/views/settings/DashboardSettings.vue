@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-card class="pa-4">
     <PanelSettings
       v-model="open"
       :cols="perRow"
@@ -18,7 +18,7 @@
       @remove-node="removeFromPanel"
       @refresh-nodes="fetchNodes"
     />
-  </v-app>
+  </v-card>
 </template>
 
 <script setup>
