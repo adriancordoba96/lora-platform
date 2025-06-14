@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, defineProps, defineEmits, computed } from 'vue'
 import VueSpeedometer from 'vue-speedometer'
 
 const props = defineProps({
@@ -128,26 +128,16 @@ const BASE_SPACING = 20
 const nodeWidth = computed(() => NODE_WIDTH * props.nodeScale)
 const nodeHeight = computed(() => NODE_HEIGHT * props.nodeScale)
 
-const gridWidth = ref(0)
-const gridSize = computed(() => {
-  const minSize = nodeWidth.value + BASE_SPACING * props.nodeScale
-  if (!gridWidth.value || !props.perRow) return Math.max(minSize, DEFAULT_GRID * props.nodeScale)
-  return Math.max(gridWidth.value / props.perRow, minSize)
-})
+const gridSize = computed(() => DEFAULT_GRID * props.nodeScale)
 const spacing = computed(() => gridSize.value - nodeWidth.value)
 const gridSizeY = computed(() => nodeHeight.value + spacing.value)
 
+const maxCol = computed(() => Math.max(0, ...localNodes.value.map(n => n.xIndex)))
+const maxRow = computed(() => Math.max(0, ...localNodes.value.map(n => n.yIndex)))
+const gridWidthPx = computed(() => (maxCol.value + 1) * gridSize.value)
+const gridHeightPx = computed(() => (maxRow.value + 1) * gridSizeY.value)
+
 const containerStyle = computed(() => ({}))
-
-function updateGridWidth() {
-  gridWidth.value = gridRef.value?.clientWidth || 0
-}
-
-onMounted(() => {
-  updateGridWidth()
-  window.addEventListener('resize', updateGridWidth)
-})
-onUnmounted(() => window.removeEventListener('resize', updateGridWidth))
 
 watch([translateX, translateY, scale], () => {
   const view = { x: translateX.value, y: translateY.value, scale: scale.value }
@@ -155,6 +145,8 @@ watch([translateX, translateY, scale], () => {
 })
 
 const gridStyle = computed(() => ({
+  width: gridWidthPx.value + 'px',
+  height: gridHeightPx.value + 'px',
   backgroundSize: `${gridSize.value}px ${gridSizeY.value}px`,
   transform: `translate(${translateX.value}px, ${translateY.value}px) scale(${scale.value})`,
   transformOrigin: 'top left'
@@ -185,8 +177,8 @@ function onMouseMove(e) {
   const rect = gridRef.value.getBoundingClientRect()
   let x = (e.clientX - rect.left) / scale.value - offsetX.value
   let y = (e.clientY - rect.top) / scale.value - offsetY.value
-  const maxX = gridRef.value.clientWidth - nodeWidth.value
-  const maxY = gridRef.value.clientHeight - nodeHeight.value
+  const maxX = gridWidthPx.value - nodeWidth.value
+  const maxY = gridHeightPx.value - nodeHeight.value
   x = Math.max(0, Math.min(x, maxX))
   y = Math.max(0, Math.min(y, maxY))
   const col = Math.round(x / gridSize.value)
@@ -239,7 +231,13 @@ function stopPan() {
 
 function onWheel(e) {
   const delta = e.deltaY > 0 ? -0.1 : 0.1
-  scale.value = Math.min(3, Math.max(0.5, scale.value + delta))
+  const newScale = Math.min(3, Math.max(0.5, scale.value + delta))
+  const rect = gridRef.value.getBoundingClientRect()
+  const x = (e.clientX - rect.left) / scale.value
+  const y = (e.clientY - rect.top) / scale.value
+  translateX.value -= x * (newScale - scale.value)
+  translateY.value -= y * (newScale - scale.value)
+  scale.value = newScale
 }
 
 function onTouchStart(e) {
@@ -266,7 +264,15 @@ function onTouchMove(e) {
   } else if (e.touches.length === 2) {
     const dist = getDistance(e.touches)
     if (pinchDistance) {
-      scale.value = Math.min(3, Math.max(0.5, pinchStartScale * dist / pinchDistance))
+      const newScale = Math.min(3, Math.max(0.5, pinchStartScale * dist / pinchDistance))
+      const rect = gridRef.value.getBoundingClientRect()
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+      const x = midX / scale.value
+      const y = midY / scale.value
+      translateX.value -= x * (newScale - scale.value)
+      translateY.value -= y * (newScale - scale.value)
+      scale.value = newScale
     }
   }
 }
@@ -298,8 +304,6 @@ function getDistance(touches) {
 }
 .grid {
   position: relative;
-  width: 100%;
-  height: 100%;
   background-color: #f5f5f5;
   background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
@@ -307,8 +311,6 @@ function getDistance(touches) {
 }
 .grid-item {
   position: absolute;
-  width: 240px;
-  height: 280px;
   cursor: move;
 }
 .node-card {
